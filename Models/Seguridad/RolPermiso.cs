@@ -1,0 +1,26 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Sistema_Ferreteria.Models.Seguridad;
+
+[Table("RolPermiso")]
+public class RolPermiso
+{
+    [Key]
+    [Column("IdRolPermiso")]
+    public int IdRolPermiso { get; set; }
+
+    [Column("IdRol")]
+    public int IdRol { get; set; }
+
+    [Column("IdPermiso")]
+    public int IdPermiso { get; set; }
+
+    // Navegación
+    [ForeignKey("IdRol")]
+    public virtual Rol Rol { get; set; } = null!;
+
+    [ForeignKey("IdPermiso")]
+    public virtual Permiso Permiso { get; set; } = null!;
+}
+
