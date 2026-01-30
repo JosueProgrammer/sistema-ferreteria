@@ -1,0 +1,184 @@
+@{
+    ViewData["Title"] = "Inventario";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div class="page-header mb-0">
+        <h1>Inventario</h1>
+        <p class="subtitle">Gestionar productos y niveles de stock</p>
+    </div>
+    <button type="button" class="btn-erp-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarProducto">
+        <i class="bi bi-plus-lg"></i>
+        Agregar Producto
+    </button>
+</div>
+
+<!-- Búsqueda de productos -->
+<div class="card-erp mb-4">
+    <div class="card-header">Búsqueda de Productos</div>
+    <div class="card-body">
+        <div class="search-wrap">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" class="form-control-erp" placeholder="Buscar productos..." />
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de productos -->
+<div class="card-erp">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span>Productos</span>
+        <span class="text-muted small fw-normal">Productos totales: 5</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table-erp">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Unidad Base</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Precio</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Láminas de Zinc</td>
+                        <td>Láminas</td>
+                        <td>metro</td>
+                        <td>3 láminas y 1 metro</td>
+                        <td><span class="badge-erp success">En Stock</span></td>
+                        <td>$15.50</td>
+                        <td>
+                            <div class="action-icons">
+                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
+                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Pernos de Acero</td>
+                        <td>Fasteners</td>
+                        <td>unidad</td>
+                        <td>2 cajas y 24 unidades</td>
+                        <td><span class="badge-erp warning">Stock Bajo</span></td>
+                        <td>$0.25</td>
+                        <td>
+                            <div class="action-icons">
+                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
+                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Tornillos de Madera</td>
+                        <td>Fasteners</td>
+                        <td>unidad</td>
+                        <td>5 cajas y 120 unidades</td>
+                        <td><span class="badge-erp success">En Stock</span></td>
+                        <td>$0.15</td>
+                        <td>
+                            <div class="action-icons">
+                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
+                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Tuberías de Cobre</td>
+                        <td>Tuberías</td>
+                        <td>metro</td>
+                        <td>12 metros</td>
+                        <td><span class="badge-erp success">En Stock</span></td>
+                        <td>$8.75</td>
+                        <td>
+                            <div class="action-icons">
+                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
+                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Clavos</td>
+                        <td>Fasteners</td>
+                        <td>unidad</td>
+                        <td>8 cajas</td>
+                        <td><span class="badge-erp success">En Stock</span></td>
+                        <td>$5.00</td>
+                        <td>
+                            <div class="action-icons">
+                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
+                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Agregar Producto -->
+<div class="modal fade modal-erp" id="modalAgregarProducto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Product</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <label class="form-label form-erp">Product Name</label>
+                    <input type="text" class="form-control-erp" placeholder="e.g., Zinc Sheets" />
+                </div>
+                <div class="mb-4">
+                    <label class="form-label form-erp">Category</label>
+                    <select class="form-control-erp">
+                        <option>Fasteners</option>
+                        <option>Láminas</option>
+                        <option>Tuberías</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label form-erp">Base Unit</label>
+                    <select class="form-control-erp">
+                        <option>Unit</option>
+                        <option>metro</option>
+                        <option>caja</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label form-erp">Presentation Formats</label>
+                    <div class="d-flex gap-2 mb-2 flex-wrap">
+                        <input type="text" class="form-control-erp flex-grow-1" style="min-width: 180px;" placeholder="Name (e.g., Box, Sheet)" />
+                        <input type="text" class="form-control-erp" style="width: 120px;" placeholder="Conversion factor" />
+                        <button type="button" class="btn-erp-primary">Add</button>
+                    </div>
+                    <div class="presentation-list">
+                        <div class="d-flex align-items-center justify-content-between py-2 px-3 mb-2" style="background: #f8f9fa; border-radius: 8px;">
+                            <span>wd = 12 units</span>
+                            <button type="button" class="btn-erp-secondary btn-sm">Remove</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label form-erp">Unit Price</label>
+                    <input type="number" class="form-control-erp" step="0.01" placeholder="0.00" value="0.00" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-erp-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn-erp-primary">Guardar Producto</button>
+            </div>
+        </div>
+    </div>
+</div>

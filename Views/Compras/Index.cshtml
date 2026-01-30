@@ -1,0 +1,126 @@
+@{
+    ViewData["Title"] = "Compras";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div class="page-header mb-0">
+        <h1>Compras</h1>
+        <p class="subtitle">Gestionar pedidos de proveedores y reabastecimiento</p>
+    </div>
+    <button type="button" class="btn-erp-outline" data-bs-toggle="collapse" data-bs-target="#formNuevoPedido">
+        <i class="bi bi-plus-lg"></i>
+        Nuevo Pedido de Compra
+    </button>
+</div>
+
+<!-- Formulario crear pedido (colapsable) -->
+<div class="collapse mb-4" id="formNuevoPedido">
+    <div class="card-erp">
+        <div class="card-header">Crear Pedido de Compra</div>
+        <div class="card-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label form-erp">Seleccionar Proveedor</label>
+                    <select class="form-control-erp">
+                        <option value="">Elegir un proveedor...</option>
+                        <option>Suministros Industriales S.A.</option>
+                        <option>Metalúrgica Depósito</option>
+                        <option>Fasteners Directo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label form-erp">Productos y Presentaciones</label>
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control-erp" placeholder="Nombre del producto" />
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control-erp" placeholder="Cantidad (con unidad)" />
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control-erp" placeholder="Precio" />
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn-erp-primary w-100">Agregar</button>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn-erp-primary">Crear Pedido de Compra</button>
+                <button type="button" class="btn-erp-secondary" data-bs-toggle="collapse" data-bs-target="#formNuevoPedido">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de pedidos -->
+<div class="card-erp card-compras-pedido mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+                <span class="text-muted">Proveedor</span>
+                <p class="mb-0 fw-bold">Suministros Industriales S.A.</p>
+            </div>
+            <span class="badge-erp success"><i class="bi bi-check-circle me-1"></i>Completada</span>
+        </div>
+        <p class="mb-1"><span class="text-muted">Fecha</span> 2026-01-15</p>
+        <p class="mb-2"><span class="text-muted">Total</span> <strong>$198.75</strong></p>
+        <div class="p-3 rounded mb-3" style="background: #f8f9fa;">
+            <strong class="d-block mb-2">Artículos:</strong>
+            <div class="d-flex justify-content-between"><span>Láminas de Zinc - 10 láminas</span><span>$155.00</span></div>
+            <div class="d-flex justify-content-between"><span>Tuberías de Cobre - 5 metros</span><span>$43.75</span></div>
+        </div>
+        <div class="action-icons">
+            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-pencil"></i> Editar</button>
+            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-trash"></i> Eliminar</button>
+        </div>
+    </div>
+</div>
+
+<div class="card-erp card-compras-pedido mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+                <span class="text-muted">Proveedor</span>
+                <p class="mb-0 fw-bold">Metalúrgica Depósito</p>
+            </div>
+            <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pendiente</span>
+        </div>
+        <p class="mb-1"><span class="text-muted">Fecha</span> 2026-01-18</p>
+        <p class="mb-2"><span class="text-muted">Total</span> <strong>$125.00</strong></p>
+        <div class="p-3 rounded mb-3" style="background: #f8f9fa;">
+            <strong class="d-block mb-2">Artículos:</strong>
+            <div class="d-flex justify-content-between"><span>Pernos de Acero - 5 cajas</span><span>$125.00</span></div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-pencil"></i> Editar</button>
+            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-trash"></i> Eliminar</button>
+            <button type="button" class="btn-erp-primary btn-sm ms-auto"><i class="bi bi-check-lg"></i> Marcar como Recibido</button>
+        </div>
+    </div>
+</div>
+
+<div class="card-erp card-compras-pedido mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <div>
+                <span class="text-muted">Proveedor</span>
+                <p class="mb-0 fw-bold">Fasteners Directo</p>
+            </div>
+            <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pendiente</span>
+        </div>
+        <p class="mb-1"><span class="text-muted">Fecha</span> 2026-01-19</p>
+        <p class="mb-2"><span class="text-muted">Total</span> <strong>$50.00</strong></p>
+        <div class="p-3 rounded mb-3" style="background: #f8f9fa;">
+            <strong class="d-block mb-2">Artículos:</strong>
+            <div class="d-flex justify-content-between"><span>Clavos - 10 cajas</span><span>$50.00</span></div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-pencil"></i> Editar</button>
+            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-trash"></i> Eliminar</button>
+            <button type="button" class="btn-erp-primary btn-sm ms-auto"><i class="bi bi-check-lg"></i> Marcar como Recibido</button>
+        </div>
+    </div>
+</div>

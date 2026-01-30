@@ -1,0 +1,159 @@
+@{
+    ViewData["Title"] = "Reportes y Análisis";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div class="page-header mb-0">
+        <h1>Reportes y Análisis</h1>
+        <p class="subtitle">Desempeño del negocio e información</p>
+    </div>
+    <button type="button" class="btn-erp-primary">
+        <i class="bi bi-download"></i>
+        Exportar Reporte
+    </button>
+</div>
+
+<!-- Filtros -->
+<div class="card-erp mb-4">
+    <div class="card-header">Filtros de Reporte</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label form-erp">Tipo de Reporte</label>
+                <select class="form-control-erp">
+                    <option>Reporte de Ventas</option>
+                    <option>Reporte de Inventario</option>
+                    <option>Reporte de Compras</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label form-erp">Rango de Fechas</label>
+                <select class="form-control-erp">
+                    <option>Mes Pasado</option>
+                    <option>Últimos 3 meses</option>
+                    <option>Este año</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Ventas por Categoría -->
+    <div class="col-lg-6">
+        <div class="card-erp">
+            <div class="card-header">Ventas por Categoría</div>
+            <div class="card-body">
+                <p class="card-subtitle">Ingresos y cantidad de transacciones por categoría de producto</p>
+                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-bar-chart" style="font-size: 2.5rem;"></i>
+                        <p class="mb-0 mt-2 small">Gráfico de barras (sales / revenue)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Ganancias vs Gastos -->
+    <div class="col-lg-6">
+        <div class="card-erp">
+            <div class="card-header">Ganancias vs Gastos</div>
+            <div class="card-body">
+                <p class="card-subtitle">Desempeño financiero mensual</p>
+                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-bar-chart" style="font-size: 2.5rem;"></i>
+                        <p class="mb-0 mt-2 small">Gráfico profit / expenses</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Tendencia del Estado del Inventario -->
+    <div class="col-lg-6">
+        <div class="card-erp">
+            <div class="card-header">Tendencia del Estado del Inventario</div>
+            <div class="card-body">
+                <p class="card-subtitle">Cambios en los niveles de stock a lo largo del tiempo</p>
+                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-graph-up" style="font-size: 2.5rem;"></i>
+                        <p class="mb-0 mt-2 small">inStock, lowStock, critical</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Distribución de Ventas -->
+    <div class="col-lg-6">
+        <div class="card-erp">
+            <div class="card-header">Distribución de Ventas</div>
+            <div class="card-body">
+                <p class="card-subtitle">Cuota de mercado por categoría</p>
+                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
+                    <div class="text-center text-muted">
+                        <i class="bi bi-pie-chart" style="font-size: 2.5rem;"></i>
+                        <p class="mb-0 mt-2 small">Gráfico de torta</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen Mensual -->
+<div class="card-erp mt-4">
+    <div class="card-header">Resumen Mensual</div>
+    <div class="card-body">
+        <p class="card-subtitle">Métricas clave y totales</p>
+        <div class="table-responsive">
+            <table class="table-erp">
+                <thead>
+                    <tr>
+                        <th>Mes</th>
+                        <th>Ventas Totales</th>
+                        <th>Ingresos</th>
+                        <th>Gastos</th>
+                        <th>Ganancias</th>
+                        <th>Margen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Enero</td>
+                        <td>234</td>
+                        <td>$14,200</td>
+                        <td>$4,200</td>
+                        <td>$8,900</td>
+                        <td>62.5%</td>
+                    </tr>
+                    <tr>
+                        <td>Febrero</td>
+                        <td>267</td>
+                        <td>$15,100</td>
+                        <td>$4,100</td>
+                        <td>$9,200</td>
+                        <td>60.9%</td>
+                    </tr>
+                    <tr>
+                        <td>Marzo</td>
+                        <td>312</td>
+                        <td>$16,800</td>
+                        <td>$4,300</td>
+                        <td>$10,100</td>
+                        <td>60.1%</td>
+                    </tr>
+                    <tr>
+                        <td>Abril</td>
+                        <td>289</td>
+                        <td>$15,700</td>
+                        <td>$4,000</td>
+                        <td>$9,800</td>
+                        <td>62.4%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

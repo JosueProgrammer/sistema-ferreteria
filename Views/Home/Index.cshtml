@@ -1,8 +1,97 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Panel Principal";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="page-header">
+    <h1>Panel Principal</h1>
+    <p class="subtitle">¡Bienvenido! Aquí está el resumen de tu negocio.</p>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="summary-cards">
+    <div class="summary-card">
+        <div class="summary-content d-flex align-items-center gap-2">
+            <div class="summary-icon blue"><i class="bi bi-currency-dollar"></i></div>
+            <div class="summary-title">Ventas Totales</div>
+        </div>
+        <div class="summary-value">$47,230</div>
+        <div class="summary-indicator positive">+12.5% respecto al mes anterior</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-content d-flex align-items-center gap-2">
+            <div class="summary-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="summary-title">Alertas de Stock Bajo</div>
+        </div>
+        <div class="summary-value">3</div>
+        <div class="summary-indicator danger">Requieren atención</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-content d-flex align-items-center gap-2">
+            <div class="summary-icon orange"><i class="bi bi-box-seam"></i></div>
+            <div class="summary-title">Productos Totales</div>
+        </div>
+        <div class="summary-value">247</div>
+        <div class="summary-indicator muted">En todas las categorías</div>
+    </div>
+    <div class="summary-card">
+        <div class="summary-content d-flex align-items-center gap-2">
+            <div class="summary-icon blue"><i class="bi bi-graph-up"></i></div>
+            <div class="summary-title">Ingresos Diarios</div>
+        </div>
+        <div class="summary-value">$2,156</div>
+        <div class="summary-indicator positive">+5.2% hoy</div>
+    </div>
+</div>
+
+<!-- Fila inferior: Tendencia de ventas + Alertas de stock -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-erp">
+            <div class="card-header">Tendencia de Ventas</div>
+            <div class="card-body">
+                <p class="card-subtitle">Resumen mensual de ventas e ingresos</p>
+                <div class="chart-placeholder" style="height: 280px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6c757d;">
+                    <div class="text-center">
+                        <i class="bi bi-bar-chart-line" style="font-size: 3rem;"></i>
+                        <p class="mb-0 mt-2">Gráfico de tendencia (10000, 7500, 5000)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-erp">
+            <div class="card-header">Alertas de Stock Bajo</div>
+            <div class="card-body">
+                <p class="card-subtitle">Productos por debajo del umbral</p>
+                <div class="alertas-list" style="max-height: 300px; overflow-y: auto;">
+                    <div class="alerta-item d-flex justify-content-between align-items-start gap-3 mb-3 p-3" style="background: #fff8f8; border-radius: 8px; border-left: 3px solid #dc3545;">
+                        <div>
+                            <strong>Láminas de Zinc</strong>
+                            <div class="small text-muted">Actual: 2 láminas y 1 metro</div>
+                            <div class="small text-danger">Umbral: 5 láminas</div>
+                        </div>
+                        <button type="button" class="btn btn-erp-primary btn-sm">Reabastecer</button>
+                    </div>
+                    <div class="alerta-item d-flex justify-content-between align-items-start gap-3 mb-3 p-3" style="background: #fff8f8; border-radius: 8px; border-left: 3px solid #dc3545;">
+                        <div>
+                            <strong>Pernos de Acero</strong>
+                            <div class="small text-muted">Actual: 2 cajas y 24 unidades</div>
+                            <div class="small text-danger">Umbral: 5 cajas</div>
+                        </div>
+                        <button type="button" class="btn btn-erp-primary btn-sm">Reabastecer</button>
+                    </div>
+                    <div class="alerta-item d-flex justify-content-between align-items-start gap-3 p-3" style="background: #fff8f8; border-radius: 8px; border-left: 3px solid #dc3545;">
+                        <div>
+                            <strong>Tornillos de Madera</strong>
+                            <div class="small text-muted">Actual: 1 caja</div>
+                            <div class="small text-danger">Umbral: 3 cajas</div>
+                        </div>
+                        <button type="button" class="btn btn-erp-primary btn-sm">Reabastecer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

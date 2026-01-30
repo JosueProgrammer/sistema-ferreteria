@@ -1,0 +1,255 @@
+@{
+    ViewData["Title"] = "Gestión de Usuarios y Roles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header mb-4">
+    <h1>Gestión de Usuarios y Roles</h1>
+    <p class="subtitle">Administrar usuarios, roles y permisos del sistema</p>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs tabs-erp mb-4" id="usuariosTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">Usuarios</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="roles-tab" data-bs-toggle="tab" data-bs-target="#roles" type="button" role="tab">Roles y Permisos</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="usuariosTabsContent">
+    <!-- Tab Usuarios -->
+    <div class="tab-pane fade show active" id="usuarios" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+                <h5 class="mb-1">Lista de Usuarios</h5>
+                <span class="text-muted small">Total: 5 usuarios</span>
+            </div>
+            <button type="button" class="btn-erp-primary">
+                <i class="bi bi-plus-lg"></i>
+                Nuevo Usuario
+            </button>
+        </div>
+        <div class="card-erp mb-4">
+            <div class="card-header">Búsqueda de Usuarios</div>
+            <div class="card-body">
+                <div class="search-wrap">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" class="form-control-erp" placeholder="Buscar por nombre o correo..." />
+                </div>
+            </div>
+        </div>
+        <div class="card-erp">
+            <div class="card-header">
+                <span>Usuarios</span>
+                <span class="text-muted small fw-normal">Gestiona los usuarios del sistema</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table-erp">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th>Último Acceso</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Carlos García</td>
+                                <td>carlos@ferreteria.com</td>
+                                <td>Administrador</td>
+                                <td><span class="badge-erp success">Activo</span></td>
+                                <td>2026-01-22</td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" title="Bloquear"><i class="bi bi-lock"></i></a>
+                                        <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>María López</td>
+                                <td>maria@ferreteria.com</td>
+                                <td>Gerente de Ventas</td>
+                                <td><span class="badge-erp success">Activo</span></td>
+                                <td>2026-01-22</td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" title="Bloquear"><i class="bi bi-lock"></i></a>
+                                        <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Juan Pérez</td>
+                                <td>juan@ferreteria.com</td>
+                                <td>Vendedor</td>
+                                <td><span class="badge-erp success">Activo</span></td>
+                                <td>2026-01-21</td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" title="Bloquear"><i class="bi bi-lock"></i></a>
+                                        <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Ana Martínez</td>
+                                <td>ana@ferreteria.com</td>
+                                <td>Vendedor</td>
+                                <td><span class="badge-erp success">Activo</span></td>
+                                <td>2026-01-20</td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" title="Bloquear"><i class="bi bi-lock"></i></a>
+                                        <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Pedro Sánchez</td>
+                                <td>pedro@ferreteria.com</td>
+                                <td>Gerente de Inventario</td>
+                                <td><span class="badge-erp secondary">Inactivo</span></td>
+                                <td>2026-01-15</td>
+                                <td>
+                                    <div class="action-icons">
+                                        <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
+                                        <a href="#" title="Bloquear"><i class="bi bi-lock"></i></a>
+                                        <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Roles y Permisos -->
+    <div class="tab-pane fade" id="roles" role="tabpanel">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <div>
+                <h5 class="mb-1">Roles y Permisos</h5>
+                <span class="text-muted small">Total: 4 roles</span>
+            </div>
+            <button type="button" class="btn-erp-primary">
+                <i class="bi bi-plus-lg"></i>
+                Nuevo Rol
+            </button>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card-erp h-100">
+                    <div class="card-body">
+                        <h6 class="mb-2 d-flex align-items-center">
+                            <span class="role-card-icon"><i class="bi bi-shield-check"></i></span>
+                            Administrador
+                        </h6>
+                        <p class="small text-muted mb-3">Acceso total al sistema</p>
+                        <p class="small mb-2 text-muted">Usuarios con este rol: <strong class="text-dark d-inline-block px-2 py-1 rounded" style="background: #e9ecef;">1</strong></p>
+                        <p class="small mb-2"><strong>Permisos:</strong></p>
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            <span class="badge-erp secondary">Ver Todo</span>
+                            <span class="badge-erp secondary">Crear</span>
+                            <span class="badge-erp secondary">Editar</span>
+                            <span class="badge-erp secondary">Eliminar</span>
+                            <span class="badge-erp secondary">Gestionar Usuarios</span>
+                            <span class="badge-erp secondary">Gestionar Roles</span>
+                            <span class="badge-erp secondary">Ver Reportes</span>
+                            <span class="badge-erp secondary">Exportar Datos</span>
+                        </div>
+                        <div class="d-flex w-100 gap-2">
+                            <button type="button" class="btn-erp-secondary btn-sm w-100 justify-content-center"><i class="bi bi-pencil"></i> Editar</button>
+                            <button type="button" class="btn-erp-secondary btn-sm w-100 justify-content-center"><i class="bi bi-trash"></i> Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-erp h-100">
+                    <div class="card-body">
+                        <h6 class="mb-2 d-flex align-items-center">
+                            <span class="role-card-icon"><i class="bi bi-shield-check"></i></span>
+                            Gerente de Ventas
+                        </h6>
+                        <p class="small text-muted mb-3">Gestiona ventas y comisiones</p>
+                        <p class="small mb-2 text-muted">Usuarios con este rol: <strong class="text-dark d-inline-block px-2 py-1 rounded" style="background: #e9ecef;">1</strong></p>
+                        <p class="small mb-2"><strong>Permisos:</strong></p>
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            <span class="badge-erp secondary">Ver Ventas</span>
+                            <span class="badge-erp secondary">Crear Ventas</span>
+                            <span class="badge-erp secondary">Editar Ventas</span>
+                            <span class="badge-erp secondary">Ver Reportes de Ventas</span>
+                            <span class="badge-erp secondary">Ver Clientes</span>
+                            <span class="badge-erp secondary">Crear Facturas</span>
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center w-100">
+                            <button type="button" class="btn-erp-secondary btn-sm justify-content-center w-100"><i class="bi bi-pencil"></i> Editar</button>
+                            <button type="button" class="btn-erp-secondary btn-sm justify-content-center w-100"><i class="bi bi-trash"></i> Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-erp h-100">
+                    <div class="card-body">
+                        <h6 class="mb-2 d-flex align-items-center">
+                            <span class="role-card-icon"><i class="bi bi-shield-check"></i></span>
+                            Vendedor
+                        </h6>
+                        <p class="small text-muted mb-3">Realiza ventas y consulta inventario</p>
+                        <p class="small mb-2 text-muted">Usuarios con este rol: <strong class="text-dark d-inline-block px-2 py-1 rounded" style="background: #e9ecef;">2</strong></p>
+                        <p class="small mb-2"><strong>Permisos:</strong></p>
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            <span class="badge-erp secondary">Ver Inventario</span>
+                            <span class="badge-erp secondary">Crear Ventas</span>
+                            <span class="badge-erp secondary">Ver Reportes</span>
+                            <span class="badge-erp secondary">Consultar Stock</span>
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center w-100">
+                            <button type="button" class="btn-erp-secondary btn-sm justify-content-center w-100"><i class="bi bi-pencil"></i> Editar</button>
+                            <button type="button" class="btn-erp-secondary btn-sm justify-content-center w-100"><i class="bi bi-trash"></i> Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-erp h-100">
+                    <div class="card-body">
+                        <h6 class="mb-2 d-flex align-items-center">
+                            <span class="role-card-icon"><i class="bi bi-shield-check"></i></span>
+                            Gerente de Inventario
+                        </h6>
+                        <p class="small text-muted mb-3">Gestiona inventario y compras</p>
+                        <p class="small mb-2 text-muted">Usuarios con este rol: <strong class="text-dark d-inline-block px-2 py-1 rounded" style="background: #e9ecef;">1</strong></p>
+                        <p class="small mb-2"><strong>Permisos:</strong></p>
+                        <div class="d-flex flex-wrap gap-1 mb-3">
+                            <span class="badge-erp secondary">Ver Inventario</span>
+                            <span class="badge-erp secondary">Crear Productos</span>
+                            <span class="badge-erp secondary">Editar Productos</span>
+                            <span class="badge-erp secondary">Gestionar Stock</span>
+                            <span class="badge-erp secondary">Ver Compras</span>
+                            <span class="badge-erp secondary">Crear Compras</span>
+                            <span class="badge-erp secondary">Ver Reportes</span>
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center w-100">
+                            <button type="button" class="btn-erp-secondary btn-sm justify-content-center w-100"><i class="bi bi-pencil"></i> Editar</button>
+                            <button type="button" class="btn-erp-secondary btn-sm justify-content-center w-100"><i class="bi bi-trash"></i> Eliminar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+</div>
+</div>
+</div>

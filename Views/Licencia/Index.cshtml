@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "Gestión de Licencia";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header mb-4">
+    <h1>Gestión de Licencia</h1>
+    <p class="subtitle">Gestionar la licencia del sistema y la suscripción</p>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Estado de la Licencia -->
+    <div class="col-lg-6">
+        <div class="card-erp h-100 border-success" style="border-width: 2px !important;">
+            <div class="card-body position-relative">
+                <i class="bi bi-check-circle-fill text-success position-absolute top-0 end-0 m-3" style="font-size: 1.5rem;"></i>
+                <h5 class="card-title mb-2">Estado de la Licencia</h5>
+                <p class="card-subtitle mb-4">Información de suscripción actual</p>
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Tipo de Licencia</span>
+                    <strong class="d-flex align-items-center gap-2">
+                        <i class="bi bi-key"></i>
+                        Profesional
+                    </strong>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted d-block small">Estado</span>
+                    <strong class="text-success d-flex align-items-center gap-2">
+                        <span class="rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
+                        Activa
+                    </strong>
+                </div>
+                <div class="mb-3">
+                    <span class="text-muted d-block small"><i class="bi bi-calendar me-1"></i>Fecha de Vencimiento</span>
+                    <strong class="d-block">2026-03-07</strong>
+                    <span class="small text-success">45 días restantes</span>
+                </div>
+                <div class="mb-4">
+                    <span class="text-muted d-block small">Período de Licencia</span>
+                    <div class="progress mt-1" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: 12%;"></div>
+                        <div class="progress-bar bg-secondary" style="width: 88%;"></div>
+                    </div>
+                    <span class="small text-muted">45 / 365 días</span>
+                </div>
+                <div>
+                    <strong class="d-block mb-2">Características Incluidas</strong>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Usuarios Ilimitados</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Acceso a Todos los Módulos</li>
+                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Soporte Prioritario</li>
+                        <li><i class="bi bi-check-lg text-success me-2"></i>Respaldos Diarios</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Renovación y Activación + Ayuda -->
+    <div class="col-lg-6">
+        <div class="card-erp mb-4">
+            <div class="card-header">Renovación y Activación</div>
+            <div class="card-body">
+                <p class="card-subtitle mb-3">Gestionar la activación de licencia</p>
+                <div class="d-flex gap-2 mb-4 p-3 rounded" style="background: #f0f7ff;">
+                    <i class="bi bi-info-circle text-primary mt-1"></i>
+                    <p class="mb-0 small">Asegúrate de tener acceso sin interrupciones a Ferretería ERP renovando tu licencia antes del vencimiento.</p>
+                </div>
+                <div class="d-flex gap-2 flex-column">
+                    <button type="button" class="btn-erp-primary justify-content-center">Activar Nueva Licencia</button>
+                    <button type="button" class="btn-erp-secondary justify-content-center">Renovar Suscripción</button>
+                    <button type="button" class="btn-erp-secondary justify-content-center">Descargar Factura</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-erp">
+            <div class="card-header">¿Necesitas Ayuda?</div>
+            <div class="card-body">
+                <p class="card-subtitle mb-3">Contacta a nuestro equipo de soporte para asistencia con licencias</p>
+                <button type="button" class="btn-erp-secondary">Contactar Soporte</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de Licencia -->
+<div class="card-erp">
+    <div class="card-header">Historial de Licencia</div>
+    <div class="card-body">
+        <p class="card-subtitle mb-3">Activaciones y renovaciones anteriores</p>
+        <div class="table-responsive">
+            <table class="table-erp">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Fecha de Activación</th>
+                        <th>Fecha de Vencimiento</th>
+                        <th>Duración</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Profesional</td>
+                        <td>2025-03-07</td>
+                        <td>2026-03-07</td>
+                        <td>1 Año</td>
+                        <td><span class="text-success fw-bold">Activa</span></td>
+                    </tr>
+                    <tr>
+                        <td>Profesional</td>
+                        <td>2024-03-07</td>
+                        <td>2025-03-07</td>
+                        <td>1 Año</td>
+                        <td><span class="text-danger fw-bold">Vencida</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

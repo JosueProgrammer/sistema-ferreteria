@@ -1,0 +1,674 @@
+@{
+    ViewData["Title"] = "Punto de Venta";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="pos-container">
+    <!-- Left Panel: Cart & Controls -->
+    <div class="pos-left-pane">
+        <!-- Customer & Order Info -->
+        <div class="pos-top-bar">
+            <div class="customer-selector">
+                <i class="bi bi-person-circle"></i>
+                <span>Cliente General</span>
+            </div>
+        </div>
+
+        <!-- Cart Items Area -->
+        <div class="pos-cart-area" id="cartContainer">
+            <div id="cartEmpty" class="cart-empty-state">
+                <i class="bi bi-cart3"></i>
+                <p>Empiece a agregar productos</p>
+            </div>
+            <div id="cartItemsList" class="cart-items-list" style="display:none;"></div>
+        </div>
+
+        <!-- Numpad & Actions -->
+        <div class="pos-controls-area">
+            <div class="numpad-grid">
+                <button class="btn-numpad number">1</button>
+                <button class="btn-numpad number">2</button>
+                <button class="btn-numpad number">3</button>
+                <button class="btn-numpad action mode-qty selected" data-mode="qty">Qty</button>
+                
+                <button class="btn-numpad number">4</button>
+                <button class="btn-numpad number">5</button>
+                <button class="btn-numpad number">6</button>
+                <button class="btn-numpad action mode-disc" data-mode="disc">Disc</button>
+
+                <button class="btn-numpad number">7</button>
+                <button class="btn-numpad number">8</button>
+                <button class="btn-numpad number">9</button>
+                <button class="btn-numpad action mode-price" data-mode="price">Price</button>
+
+                <button class="btn-numpad action">+/-</button>
+                <button class="btn-numpad number">0</button>
+                <button class="btn-numpad action">.</button>
+                <button class="btn-numpad action backspace"><i class="bi bi-backspace"></i></button>
+            </div>
+            
+            <div class="pos-total-section">
+                <div class="total-row">
+                    <span>Total:</span>
+                    <span id="cartTotalDisplay">$0.00</span>
+                </div>
+                <button class="btn-pay" id="btnPayment">
+                    <i class="bi bi-chevron-right"></i>
+                    <span>Pagar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Products & Payment Screens -->
+    <div class="pos-right-pane">
+        <!-- PRODUCT SCREEN -->
+        <div id="productScreen" class="h-100 d-flex flex-column">
+            <!-- Search & Categories -->
+            <div class="products-header">
+                <div class="categories-nav">
+                    <button class="btn-category active"><i class="bi bi-house-door-fill"></i></button>
+                    <button class="btn-category">Herramientas</button>
+                    <button class="btn-category">Materiales</button>
+                    <button class="btn-category">Plomería</button>
+                </div>
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Buscar productos..." id="searchProductos">
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div class="products-grid" id="productosGrid">
+                <!-- Products with Inline Buttons (Recovered Card Style) -->
+                 <div class="product-card-wrapper" data-product="Láminas de Zinc">
+                     <div class="product-card-content">
+                        <strong class="product-name">Láminas de Zinc</strong>
+                        <p class="product-price-display">$15.50</p>
+                        <div class="product-actions">
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Láminas de Zinc" data-variant="Lámina" data-price="15.50">Lámina</button>
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Láminas de Zinc" data-variant="Metro" data-price="15.50">Metro</button>
+                        </div>
+                     </div>
+                </div>
+
+                <div class="product-card-wrapper" data-product="Pernos de Acero">
+                     <div class="product-card-content">
+                        <strong class="product-name">Pernos de Acero</strong>
+                        <p class="product-price-display">$0.25</p>
+                        <div class="product-actions">
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Pernos de Acero" data-variant="Unidad" data-price="0.25">Unidad</button>
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Pernos de Acero" data-variant="Caja" data-price="0.25">Caja</button>
+                        </div>
+                     </div>
+                </div>
+
+                <div class="product-card-wrapper" data-product="Tornillos de Madera">
+                     <div class="product-card-content">
+                        <strong class="product-name">Tornillos de Madera</strong>
+                        <p class="product-price-display">$0.15</p>
+                        <div class="product-actions">
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Tornillos de Madera" data-variant="Unidad" data-price="0.15">Unidad</button>
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Tornillos de Madera" data-variant="Caja" data-price="0.15">Caja</button>
+                        </div>
+                     </div>
+                </div>
+
+                <div class="product-card-wrapper" data-product="Tuberías de Cobre">
+                     <div class="product-card-content">
+                        <strong class="product-name">Tuberías de Cobre</strong>
+                        <p class="product-price-display">$8.75</p>
+                        <div class="product-actions">
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Tuberías de Cobre" data-variant="Metro" data-price="8.75">Metro</button>
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Tuberías de Cobre" data-variant="Rollo" data-price="8.75">Rollo</button>
+                        </div>
+                     </div>
+                </div>
+
+                <div class="product-card-wrapper" data-product="Clavos">
+                     <div class="product-card-content">
+                        <strong class="product-name">Clavos</strong>
+                        <p class="product-price-display">$5.00</p>
+                        <div class="product-actions">
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Clavos" data-variant="Unidad" data-price="5.00">Unidad</button>
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Clavos" data-variant="Caja" data-price="5.00">Caja</button>
+                        </div>
+                     </div>
+                </div>
+                
+                <div class="product-card-wrapper" data-product="Martillo">
+                     <div class="product-card-content">
+                        <strong class="product-name">Martillo</strong>
+                        <p class="product-price-display">$12.00</p>
+                        <div class="product-actions">
+                            <button type="button" class="btn-erp-primary btn-sm flex-grow-1 btn-add-cart" 
+                                    data-product="Martillo" data-variant="Unidad" data-price="12.00">Unidad</button>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAYMENT SCREEN (Hidden by default) -->
+        <div id="paymentScreen" class="h-100 flex-column" style="display:none;">
+            <div class="payment-header">
+                <button class="btn-back" id="btnBackToProducts"><i class="bi bi-arrow-left"></i> Atrás</button>
+                <h2>Pago</h2>
+            </div>
+            <div class="payment-body">
+                <div class="payment-methods">
+                    <h3>Método de Pago</h3>
+                    <div class="methods-grid">
+                        <button class="btn-method selected" data-method="Efectivo"><i class="bi bi-cash"></i> Efectivo</button>
+                        <button class="btn-method" data-method="Banco"><i class="bi bi-bank"></i> Banco</button>
+                        <button class="btn-method" data-method="Tarjeta"><i class="bi bi-credit-card"></i> Tarjeta</button>
+                    </div>
+                </div>
+                <div class="payment-summary-card">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="fs-4">Total a Pagar</span>
+                        <span class="fs-3 fw-bold" id="paymentTotalDisplay">$0.00</span>
+                    </div>
+                     <div class="d-flex justify-content-between text-muted">
+                        <span>Restante</span>
+                        <span class="text-danger fw-bold">$0.00</span>
+                    </div>
+                </div>
+            </div>
+             <div class="payment-footer">
+                 <button class="btn-validate" id="btnValidateSale">
+                     <i class="bi bi-check-lg"></i> Validar Venta
+                 </button>
+             </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
+    .app-container {
+        height: 100%;
+        min-height: 0;
+    }
+    .sidebar {
+        height: 100%;
+        overflow-y: auto;
+    }
+    .main-content {
+        height: 100%;
+        padding: 0 !important;
+        overflow: hidden !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* POS CONTAINER */
+    .pos-container {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        background-color: #f9f9f9;
+        overflow: hidden;
+    }
+
+    .pos-left-pane {
+        width: 450px;
+        min-width: 400px;
+        background-color: white;
+        border-right: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        z-index: 10;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    }
+
+    .pos-top-bar {
+        padding: 0 15px;
+        height: 60px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        flex-shrink: 0;
+    }
+
+    .customer-selector {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 4px;
+        background: #f8f9fa;
+        border: 1px solid #eee;
+    }
+    .customer-selector:hover { background: #e9ecef; }
+
+    .pos-cart-area {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+        position: relative;
+        background: #fff;
+    }
+
+    .cart-empty-state {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #ccc;
+    }
+    .cart-empty-state i { font-size: 4rem; opacity: 0.5; }
+
+    .cart-item-row {
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+    .cart-item-row.selected { background-color: #e8f0fe; border-left: 4px solid var(--primary-btn); }
+    .cart-item-row:hover { background-color: #f8f9fa; }
+    
+    .cart-item-top { display: flex; justify-content: space-between; font-weight: 500; margin-bottom: 4px; }
+    .cart-item-details { display: flex; justify-content: space-between; font-size: 0.9em; color: #666; }
+
+    /* Controls Area */
+    .pos-controls-area {
+        background: #fff;
+        border-top: 1px solid #ddd;
+        padding: 0;
+        flex-shrink: 0;
+    }
+
+    .numpad-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        background: #e0e0e0;
+        padding: 1px 0 0 0;
+    }
+
+    .btn-numpad {
+        border: none;
+        background: white;
+        padding: 0;
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: #444;
+        cursor: pointer;
+        transition: background 0.1s;
+        height: 60px;
+    }
+    .btn-numpad:active { background: #eee; }
+    .btn-numpad.action { font-size: 0.9rem; color: #666; }
+    .btn-numpad.selected { background: var(--primary-btn); color: white; }
+    .backspace { color: #dc3545; }
+
+    .pos-total-section {
+        display: flex;
+        height: 70px;
+        border-top: 1px solid #ddd;
+        background: #fff;
+    }
+
+    .total-row {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-left: 20px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--text-dark);
+    }
+    
+    .btn-pay {
+        background-color: var(--primary-btn);
+        color: white;
+        border: none;
+        padding: 0 40px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .btn-pay:hover { background-color: var(--primary-btn-hover); }
+
+
+    .pos-right-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background-color: #f4f6f8;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .products-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #fff;
+        border-bottom: 1px solid #e0e0e0;
+        height: 70px;
+        flex-shrink: 0;
+    }
+
+    .categories-nav { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 0; }
+    .btn-category {
+        border: none;
+        background: #f1f3f5;
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        color: #555;
+        white-space: nowrap;
+        transition: 0.2s;
+    }
+    .btn-category.active { background: var(--text-dark); color: white; }
+
+    .search-box {
+        position: relative;
+        width: 300px;
+    }
+    .search-box input {
+        width: 100%;
+        padding: 8px 10px 8px 35px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        outline: none;
+    }
+    .search-box i {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .product-card-wrapper {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        transition: transform 0.1s;
+    }
+    .product-card-wrapper:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .product-card-content {
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+    .product-name { font-size: 1rem; color: #333; margin-bottom: 5px; display: block; }
+    .product-price-display { font-size: 1.1rem; color: #666; font-weight: 500; margin-bottom: 15px; }
+    
+    .product-actions {
+        margin-top: auto;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .payment-header {
+        padding: 15px 20px;
+        background: #fff;
+        border-bottom: 1px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        height: 70px;
+        flex-shrink: 0;
+    }
+    .payment-header h2 { margin: 0; font-size: 1.5rem; }
+    .btn-back { border: none; background: transparent; font-size: 1.1rem; color: #666; font-weight: 500; }
+    
+    .payment-body {
+        padding: 40px;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 40px;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        overflow-y: auto;
+    }
+
+    .methods-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-top: 20px;
+    }
+    .btn-method {
+        border: 1px solid #ddd;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        color: #555;
+    }
+    .btn-method:hover { background: #f8f9fa; }
+    .btn-method.selected {
+        border-color: var(--primary-btn);
+        background: #ecf4ff;
+        color: var(--primary-btn);
+        font-weight: 600;
+    }
+
+    .payment-summary-card {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        height: fit-content;
+    }
+
+    .payment-footer {
+        padding: 20px;
+        background: #fff;
+        border-top: 1px solid #e0e0e0;
+        display: flex;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .btn-validate {
+        background: var(--primary-btn);
+        color: white;
+        border: none;
+        padding: 15px 60px;
+        font-size: 1.3rem;
+        border-radius: 8px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .btn-validate:hover { background: var(--primary-btn-hover); }
+
+    @@media (max-width: 768px) {
+        .pos-container { flex-direction: column; overflow-y: auto; height: auto; position: static; }
+        .pos-left-pane { width: 100%; min-width: 0; height: auto; border-right: none; }
+        .pos-right-pane { height: auto; overflow: visible; }
+        .products-grid { height: auto; padding-bottom: 60px; }
+        .payment-body { grid-template-columns: 1fr; padding: 20px; }
+    }
+</style>
+
+@section Scripts {
+<script>
+    (function() {
+        const cart = [];
+        let selectedRowIndex = -1;
+        
+        const cartContainer = document.getElementById('cartContainer');
+        const cartEmpty = document.getElementById('cartEmpty');
+        const cartItemsList = document.getElementById('cartItemsList');
+        const cartTotalDisplay = document.getElementById('cartTotalDisplay');
+        const productScreen = document.getElementById('productScreen');
+        const paymentScreen = document.getElementById('paymentScreen');
+        const paymentTotalDisplay = document.getElementById('paymentTotalDisplay');
+        
+        function formatPrice(n) { return '$' + Number(n).toFixed(2); }
+
+        function renderCart() {
+            if (cart.length === 0) {
+                cartEmpty.style.display = 'block';
+                cartItemsList.style.display = 'none';
+                cartTotalDisplay.innerText = '$0.00';
+                return;
+            }
+
+            cartEmpty.style.display = 'none';
+            cartItemsList.style.display = 'block';
+            cartItemsList.innerHTML = '';
+
+            let total = 0;
+            
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.quantity;
+                total += subtotal;
+
+                const row = document.createElement('div');
+                row.className = 'cart-item-row ' + (index === selectedRowIndex ? 'selected' : '');
+                row.onclick = () => { selectedRowIndex = index; renderCart(); };
+                
+                row.innerHTML = 
+                    '<div class="cart-item-top">' +
+                        '<span>' + item.name + '</span>' +
+                        '<span>' + formatPrice(subtotal) + '</span>' +
+                    '</div>' +
+                    '<div class="cart-item-details">' +
+                        '<span>' + item.quantity + ' Uni (' + item.variant + ') at ' + formatPrice(item.price) + '</span>' +
+                    '</div>';
+                
+                cartItemsList.appendChild(row);
+            });
+
+            const totalFormatted = formatPrice(total);
+            cartTotalDisplay.innerText = totalFormatted;
+            paymentTotalDisplay.innerText = totalFormatted;
+            
+        }
+
+        function addToCart(name, price, variant) {
+            const existingIndex = cart.findIndex(c => c.name === name && c.variant === variant);
+            if (existingIndex !== -1) {
+                cart[existingIndex].quantity += 1;
+                selectedRowIndex = existingIndex;
+            } else {
+                cart.push({ name: name, price: parseFloat(price), variant: variant, quantity: 1 });
+                selectedRowIndex = cart.length - 1;
+            }
+            renderCart();
+        }
+
+        document.querySelectorAll('.btn-add-cart').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                const name = btn.dataset.product;
+                const price = btn.dataset.price;
+                const variant = btn.dataset.variant;
+                
+                addToCart(name, price, variant);
+            });
+        });
+
+        document.querySelectorAll('.btn-numpad.number').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (selectedRowIndex === -1) return;
+                console.log('Numpad clicked:', btn.innerText);
+            });
+        });
+
+        document.querySelector('.backspace').addEventListener('click', () => {
+             if (selectedRowIndex === -1 && cart.length > 0) selectedRowIndex = cart.length - 1;
+             if (selectedRowIndex === -1) return;
+             
+             cart.splice(selectedRowIndex, 1);
+             selectedRowIndex = cart.length > 0 ? cart.length - 1 : -1;
+             renderCart();
+        });
+
+         document.getElementById('btnPayment').addEventListener('click', () => {
+             if(cart.length === 0) {
+                 alert('Agregue productos primero.');
+                 return;
+             }
+             productScreen.style.display = 'none';
+             paymentScreen.style.display = 'flex';
+         });
+
+         document.getElementById('btnBackToProducts').addEventListener('click', () => {
+             paymentScreen.style.display = 'none';
+             productScreen.style.display = 'flex';
+         });
+
+         document.querySelectorAll('.btn-method').forEach(btn => {
+             btn.addEventListener('click', () => {
+                 document.querySelectorAll('.btn-method').forEach(b => b.classList.remove('selected'));
+                 btn.classList.add('selected');
+             });
+         });
+
+         document.getElementById('btnValidateSale').addEventListener('click', () => {
+             if (confirm('¿Confirmar venta y generar factura?')) {
+                 alert('Venta realizada con éxito!');
+                 window.location.reload();
+             }
+         });
+
+        document.getElementById('searchProductos').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('.product-card-wrapper').forEach(item => {
+                const name = item.dataset.product.toLowerCase();
+                item.style.display = name.includes(term) ? 'flex' : 'none';
+            });
+        });
+
+    })();
+</script>
+}
