@@ -1,0 +1,294 @@
+@model IEnumerable<Sistema_Ferreteria.Models.Ventas.Venta>
+@{
+    ViewData["Title"] = "Historial de Ventas";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div class="page-header mb-0">
+        <h1>Historial de Ventas</h1>
+        <p class="subtitle">Consulta, filtra y gestiona todas las operaciones de venta</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn-erp-secondary" onclick="exportarExcel()">
+            <i class="bi bi-file-earmark-excel"></i> Exportar
+        </button>
+        <a asp-action="Index" class="btn-erp-primary">
+            <i class="bi bi-cart-plus"></i> Ir al POS
+        </a>
+    </div>
+</div>
+
+<!-- Resumen -->
+<div class="summary-cards mb-4">
+    <div class="summary-card border-erp-blue">
+        <div class="summary-icon blue"><i class="bi bi-receipt"></i></div>
+        <div class="summary-title">Total Ventas</div>
+        <div class="summary-value">@Model.Count()</div>
+        <div class="summary-indicator muted">Documentos emitidos</div>
+    </div>
+    <div class="summary-card border-erp-green">
+        <div class="summary-icon green"><i class="bi bi-cash-coin"></i></div>
+        <div class="summary-title">Ingresos Brutos</div>
+        <div class="summary-value">C$ @Model.Where(v => v.Estado != "Anulada").Sum(v => v.Total).ToString("N2")</div>
+        <div class="summary-indicator positive">Excluyendo anuladas</div>
+    </div>
+    <div class="summary-card border-erp-orange">
+        <div class="summary-icon orange"><i class="bi bi-clock-history"></i></div>
+        <div class="summary-title">Cuentas por Cobrar</div>
+        <div class="summary-value">C$ @Model.Where(v => v.Estado != "Anulada").Sum(v => v.Total - v.PagosVenta.Sum(p => p.Monto)).ToString("N2")</div>
+        <div class="summary-indicator danger">Créditos pendientes</div>
+    </div>
+    <div class="summary-card border-erp-purple">
+        <div class="summary-icon purple"><i class="bi bi-x-circle"></i></div>
+        <div class="summary-title">Ventas Anuladas</div>
+        <div class="summary-value">@Model.Count(v => v.Estado == "Anulada")</div>
+        <div class="summary-indicator muted">Total canceladas</div>
+    </div>
+</div>
+
+<div class="card-erp">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Registro de Facturas</span>
+        <div class="search-wrap" style="width: 350px;">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" id="tablaSearch" class="form-control-erp" placeholder="Buscar por factura, cliente o estado..." onkeyup="filterTable()">
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-erp mb-0" id="ventasTable">
+                <thead>
+                    <tr>
+                        <th>Factura / Fecha</th>
+                        <th>Cliente / Tipo</th>
+                        <th>Estado Pago</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Saldo</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model)
+                    {
+                        var pagado = v.PagosVenta?.Sum(p => p.Monto) ?? 0;
+                        var saldo = v.Total - pagado;
+                        <tr class="@(v.Estado == "Anulada" ? "table-light text-muted" : "")">
+                            <td>
+                                <div class="fw-bold">@v.NumeroFactura</div>
+                                <div class="x-small">@v.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">@(v.Cliente?.Nombre ?? "Consumidor Final")</div>
+                                <div class="x-small text-muted">@v.TipoPago</div>
+                            </td>
+                            <td>
+                                @if (v.Estado == "Anulada")
+                                {
+                                    <span class="badge-erp secondary">Anulada</span>
+                                }
+                                else if (saldo <= 0)
+                                {
+                                    <span class="badge-erp success">Pagado Total</span>
+                                }
+                                else if (pagado > 0)
+                                {
+                                    <span class="badge-erp warning">Abonado (C$ @pagado.ToString("N2"))</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-erp danger">Pendiente</span>
+                                }
+                            </td>
+                            <td class="text-end fw-bold">C$ @v.Total.ToString("N2")</td>
+                            <td class="text-end fw-bold @(saldo > 0 ? "text-danger" : "text-success")">
+                                C$ @saldo.ToString("N2")
+                            </td>
+                            <td class="text-center">
+                                <div class="action-icons">
+                                    <button onclick="verDetalleVenta(@v.IdVenta)" title="Ver Detalle"><i class="bi bi-eye"></i></button>
+                                    @if (v.Estado != "Anulada")
+                                    {
+                                        @if (saldo > 0)
+                                        {
+                                            <button class="text-success" onclick="registrarCobro(@v.IdVenta, @saldo)" title="Registrar Pago"><i class="bi bi-cash-stack"></i></button>
+                                        }
+                                        <button class="text-danger" onclick="confirmarAnulacion(@v.IdVenta, '@v.NumeroFactura')" title="Anular"><i class="bi bi-x-circle"></i></button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle Venta -->
+<div class="modal fade modal-erp" id="modalDetalleVenta" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold" id="detFactura">---</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-6">
+                        <label class="x-small text-muted text-uppercase fw-bold">Cliente</label>
+                        <p id="detCliente" class="fw-bold mb-0">---</p>
+                        <small id="detFecha" class="text-muted">---</small>
+                    </div>
+                    <div class="col-6 text-end">
+                        <label class="x-small text-muted text-uppercase fw-bold">Vendedor</label>
+                        <p id="detVendedor" class="fw-bold mb-0">---</p>
+                        <span id="detEstado" class="badge-erp">---</span>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold mb-3 border-bottom pb-2">Artículos Vendidos</h6>
+                <table class="table table-sm" id="tablaDetallesItems">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-center">Cant.</th>
+                            <th class="text-end">Precio</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-end">TOTAL:</th>
+                            <th class="text-end" id="detTotal">C$ 0.00</th>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <h6 class="fw-bold mb-3 border-bottom pb-2 mt-4">Pagos Registrados</h6>
+                <table class="table table-sm x-small" id="tablaDetallesPagos">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Método</th>
+                            <th>Comprobante</th>
+                            <th class="text-end">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cobro (Reusado) -->
+<div class="modal fade modal-erp" id="modalPagoVenta" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold">Registrar Cobro</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <span class="text-muted small">Saldo Pendiente</span>
+                    <h1 class="fw-bold text-success display-5" id="pagoTotalLabel">C$ 0.00</h1>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Monto a Abonar</label>
+                        <input type="number" id="pagoMonto" class="form-control form-control-lg text-center" step="0.01" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Método</label>
+                        <select id="pagoMetodo" class="form-select">
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Comprobante</label>
+                        <input type="text" id="pagoComp" class="form-control" placeholder="# Op." />
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success px-5 fw-bold" id="btnConfirmarCobro">CONFIRMAR PAGO</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalleVenta'));
+        const modalPago = new bootstrap.Modal(document.getElementById('modalPagoVenta'));
+        let currentVentaId = 0;
+
+        function filterTable() {
+            const f = $('#tablaSearch').val().toLowerCase();
+            $('#ventasTable tbody tr').each(function() {
+                $(this).toggle($(this).text().toLowerCase().includes(f));
+            });
+        }
+
+        async function verDetalleVenta(id) {
+            const res = await fetch(`/Ventas/ObtenerDetalle/${id}`);
+            const v = await res.json();
+            
+            $('#detFactura').text(v.factura);
+            $('#detCliente').text(v.cliente);
+            $('#detFecha').text(v.fecha);
+            $('#detVendedor').text(v.vendedor);
+            $('#detEstado').text(v.estado).attr('class', 'badge-erp ' + (v.estado === 'Anulada' ? 'secondary' : 'success'));
+            $('#detTotal').text('C$ ' + v.total.toLocaleString(undefined, {minimumFractionDigits:2}));
+
+            const $items = $('#tablaDetallesItems tbody').empty();
+            v.detalles.forEach(d => {
+                $items.append(`<tr><td>${d.producto} <br><small class='text-muted'>${d.presentacion}</small></td><td class='text-center'>${d.cantidad}</td><td class='text-end'>C$ ${d.precio.toFixed(2)}</td><td class='text-end'>C$ ${d.subtotal.toFixed(2)}</td></tr>`);
+            });
+
+            const $pagos = $('#tablaDetallesPagos tbody').empty();
+            v.pagos.forEach(p => {
+                $pagos.append(`<tr><td>${p.fecha}</td><td>${p.metodo}</td><td>${p.comprobante || '-'}</td><td class='text-end fw-bold'>C$ ${p.monto.toFixed(2)}</td></tr>`);
+            });
+
+            modalDetalle.show();
+        }
+
+        function registrarCobro(id, saldo) {
+            currentVentaId = id;
+            $('#pagoTotalLabel').text('C$ ' + saldo.toLocaleString(undefined, {minimumFractionDigits:2}));
+            $('#pagoMonto').val(saldo);
+            modalPago.show();
+        }
+
+        $('#btnConfirmarCobro').click(async () => {
+            const data = { idVenta: currentVentaId, monto: $('#pagoMonto').val(), metodo: $('#pagoMetodo').val(), comprobante: $('#pagoComp').val() };
+            const res = await fetch('/Ventas/RegistrarPago', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const j = await res.json();
+            if (j.success) {
+                showNotification('Cobro Realizado', j.message, 'success');
+                modalPago.hide();
+                setTimeout(() => location.reload(), 1000);
+            }
+        });
+
+        function confirmarAnulacion(id, num) {
+            showConfirm('Anular Factura', `¿Está seguro de anular la factura "${num}"? El stock se devolverá al almacén.`, () => {
+                const motivo = prompt('Motivo de anulación:');
+                if(!motivo) return;
+                $.post('/Ventas/Anular', { id, motivo }, res => {
+                    if (res.success) location.reload(); else showNotification('Error', res.message, 'error');
+                });
+            });
+        }
+        
+        function exportarExcel() {
+            showNotification('Procesando', 'Preparando archivo de exportación...', 'info');
+        }
+    </script>
+}

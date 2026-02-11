@@ -6,15 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="~/css/site.css" rel="stylesheet" asp-append-version="true" />
 </head>
 <body>
+<!-- Global Notification Container -->
+<div class="notification-container" id="notificationContainer"></div>
+
 <div class="app-container">
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="appSidebar">
         <div class="sidebar-header">
-            <h4 class="logo">Ferretería ERP</h4>
-            <p class="subtitle">Sistema de Gestión de Ferreterías</p>
+            <div class="d-flex flex-column overflow-hidden">
+                <h4 class="logo">Ferretería ERP</h4>
+                <p class="subtitle">Sistema de Gestión</p>
+            </div>
+            <button class="sidebar-toggle" onclick="toggleSidebar()" title="Contraer/Expandir">
+                <i class="bi bi-list"></i>
+            </button>
         </div>
         <nav class="sidebar-nav">
             <ul class="menu">
@@ -30,10 +39,22 @@
                         <span>Inventario</span>
                     </a>
                 </li>
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Pos" ? "active" : "")">
-                    <a asp-controller="Pos" asp-action="Index">
+                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Ventas" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                    <a asp-controller="Ventas" asp-action="Index">
                         <i class="bi bi-cart3"></i>
-                        <span>Ventas</span>
+                        <span>Punto de Venta</span>
+                    </a>
+                </li>
+                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Ventas" && ViewContext.RouteData.Values["action"]?.ToString() == "Historial" ? "active" : "")">
+                    <a asp-controller="Ventas" asp-action="Historial">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Historial Ventas</span>
+                    </a>
+                </li>
+                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Clientes" ? "active" : "")">
+                    <a asp-controller="Clientes" asp-action="Index">
+                        <i class="bi bi-people"></i>
+                        <span>Clientes</span>
                     </a>
                 </li>
                 <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Compras" ? "active" : "")">
@@ -63,14 +84,94 @@
             </ul>
         </nav>
         <div class="sidebar-footer">
-            v1.0.0 © 2026 Ferretería Pro
+            <div class="text-center opacity-50 x-small">v1.0.0 © 2026 Ferretería Pro</div>
         </div>
     </aside>
     <main class="main-content">
-        @RenderBody()
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-left">
+                <div class="clock-icon"><i class="bi bi-clock"></i></div>
+                <div class="clock-display" id="digitalClock">--:--:-- --</div>
+            </div>
+            <div class="header-right">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="user-info-dropdown">
+                        <div class="user-badge" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="user-avatar">
+                                @User.Identity.Name?.Substring(0, 1).ToUpper()
+                            </div>
+                            <div class="user-details d-none d-md-block">
+                                <span class="username">@User.Claims.FirstOrDefault(c => c.Type == "NombreCompleto")?.Value</span>
+                                <span class="user-role">@User.Identity.Name</span>
+                            </div>
+                            <i class="bi bi-chevron-down ms-2 small"></i>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg rounded-4 border-0 mt-2" aria-labelledby="userMenuButton">
+                            <li class="px-3 py-2 border-bottom mb-2">
+                                <p class="mb-0 small fw-bold">Mi Perfil</p>
+                                <p class="mb-0 x-small text-muted">@User.Identity.Name</p>
+                            </li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="bi bi-person me-2"></i> Perfil</a></li>
+                            <li><a class="dropdown-item py-2" href="#"><i class="bi bi-gear me-2"></i> Ajustes</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a href="javascript:void(0)" onclick="confirmarCerrarSesion()" class="dropdown-item py-2 text-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                }
+            </div>
+        </header>
+        
+        <div class="content-body">
+            @RenderBody()
+        </div>
     </main>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<form id="logoutForm" asp-controller="Cuentas" asp-action="Logout" method="post" style="display:none">
+    @Html.AntiForgeryToken()
+</form>
+
+<script>
+    // Persistencia del Sidebar
+    const sidebar = document.getElementById('appSidebar');
+    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+        sidebar.classList.add('collapsed');
+    }
+
+    function toggleSidebar() {
+        sidebar.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+    }
+
+    function confirmarCerrarSesion() {
+        showConfirm('Cerrar Sesión', '¿Estás seguro de que deseas cerrar tu sesión actual?', () => {
+            document.getElementById('logoutForm').submit();
+        }, 'primary');
+    }
+
+    function updateClock() {
+        const now = new Date();
+        const options = { 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: true 
+        };
+        const timeString = now.toLocaleTimeString('es-NI', options);
+        document.getElementById('digitalClock').textContent = timeString;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/erp-notifications.js"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -34,12 +34,12 @@ public class DetalleCompra
 
     // Navegación
     [ForeignKey("IdCompra")]
-    public virtual Compra Compra { get; set; } = null!;
+    public virtual Compra? Compra { get; set; }
 
     [ForeignKey("IdProducto")]
-    public virtual Producto Producto { get; set; } = null!;
+    public virtual Producto? Producto { get; set; }
 
     [ForeignKey("IdPresentacion")]
-    public virtual Presentacion Presentacion { get; set; } = null!;
+    public virtual Presentacion? Presentacion { get; set; }
 }
 

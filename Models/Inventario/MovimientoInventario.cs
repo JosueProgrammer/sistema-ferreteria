@@ -39,9 +39,9 @@ public class MovimientoInventario
 
     // Navegación
     [ForeignKey("IdProducto")]
-    public virtual Producto Producto { get; set; } = null!;
+    public virtual Producto? Producto { get; set; }
 
     [ForeignKey("IdUsuario")]
-    public virtual Usuario Usuario { get; set; } = null!;
+    public virtual Usuario? Usuario { get; set; }
 }
 

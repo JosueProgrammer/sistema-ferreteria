@@ -1,6 +1,9 @@
+@model IEnumerable<Sistema_Ferreteria.Models.Compras.Compra>
 @{
     ViewData["Title"] = "Compras";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var proveedores = (IEnumerable<Sistema_Ferreteria.Models.Proveedores.Proveedor>)ViewBag.Proveedores;
+    var productos = (IEnumerable<Sistema_Ferreteria.Models.Inventario.Producto>)ViewBag.Productos;
 }
 
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
@@ -8,10 +11,16 @@
         <h1>Compras</h1>
         <p class="subtitle">Gestionar pedidos de proveedores y reabastecimiento</p>
     </div>
-    <button type="button" class="btn-erp-outline" data-bs-toggle="collapse" data-bs-target="#formNuevoPedido">
-        <i class="bi bi-plus-lg"></i>
-        Nuevo Pedido de Compra
-    </button>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalProveedores">
+            <i class="bi bi-person-badge"></i>
+            Proveedores
+        </button>
+        <button type="button" class="btn-erp-outline" data-bs-toggle="collapse" data-bs-target="#formNuevoPedido">
+            <i class="bi bi-plus-lg"></i>
+            Nuevo Pedido de Compra
+        </button>
+    </div>
 </div>
 
 <!-- Formulario crear pedido (colapsable) -->
@@ -22,105 +31,788 @@
             <div class="row g-3 mb-3">
                 <div class="col-md-6">
                     <label class="form-label form-erp">Seleccionar Proveedor</label>
-                    <select class="form-control-erp">
-                        <option value="">Elegir un proveedor...</option>
-                        <option>Suministros Industriales S.A.</option>
-                        <option>Metalúrgica Depósito</option>
-                        <option>Fasteners Directo</option>
-                    </select>
+                    <div class="input-group">
+                        <select id="selectProveedor" class="form-control-erp">
+                            <option value="">Elegir un proveedor...</option>
+                            @foreach (var prov in proveedores)
+                            {
+                                <option value="@prov.IdProveedor">@prov.RazonSocial</option>
+                            }
+                        </select>
+                        <button class="btn btn-outline-primary" type="button" onclick="rapidoCrearProveedor()" title="Nuevo Proveedor">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label form-erp">Número de Factura (Opcional)</label>
+                    <input type="text" id="inputNumFactura" class="form-control-erp" placeholder="Ej: FAC-12345" />
                 </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label form-erp">Productos y Presentaciones</label>
+
+            <div class="p-3 border rounded mb-3 bg-light">
+                <h6 class="mb-3">Agregar Producto</h6>
                 <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small">Producto</label>
+                        <select id="selectProducto" class="form-control-erp">
+                            <option value="">Seleccione un producto...</option>
+                            @foreach (var prod in productos)
+                            {
+                                <option value="@prod.IdProducto" data-presentaciones='@Html.Raw(Json.Serialize(prod.Presentaciones.Select(p => new { p.IdPresentacion, p.NombrePresentacion, p.FactorConversion, p.PrecioCompra })))'>
+                                    @prod.Nombre (@prod.Codigo)
+                                </option>
+                            }
+                        </select>
+                    </div>
                     <div class="col-md-3">
-                        <input type="text" class="form-control-erp" placeholder="Nombre del producto" />
+                        <label class="form-label small">Presentación</label>
+                        <select id="selectPresentacion" class="form-control-erp">
+                            <option value="">Primero elija producto...</option>
+                        </select>
                     </div>
                     <div class="col-md-2">
-                        <input type="text" class="form-control-erp" placeholder="Cantidad (con unidad)" />
+                        <label class="form-label small">Cantidad</label>
+                        <input type="number" id="inputCantidad" class="form-control-erp" value="1" min="1" />
                     </div>
                     <div class="col-md-2">
-                        <input type="text" class="form-control-erp" placeholder="Precio" />
-                    </div>
-                    <div class="col-md-2">
-                        <button type="button" class="btn-erp-primary w-100">Agregar</button>
+                        <label class="form-label small">Precio Compra</label>
+                        <input type="number" id="inputPrecio" class="form-control-erp" step="0.01" />
                     </div>
                 </div>
+                <div class="text-end mt-2">
+                    <button type="button" id="btnAgregarItem" class="btn-erp-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i> Agregar a la Lista
+                    </button>
+                </div>
             </div>
+
+            <div class="table-responsive mb-3">
+                <table class="table table-sm table-erp" id="tablaDetalle">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Presentación</th>
+                            <th class="text-center">Cantidad</th>
+                            <th class="text-end">Precio U.</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Items dinámicos -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="4" class="text-end">Total:</th>
+                            <th id="totalPedido" class="text-end fw-bold">0.00</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
             <div class="d-flex gap-2">
-                <button type="button" class="btn-erp-primary">Crear Pedido de Compra</button>
+                <button type="button" id="btnGuardarPedido" class="btn-erp-primary">
+                    <i class="bi bi-save me-1"></i> Guardar Pedido
+                </button>
                 <button type="button" class="btn-erp-secondary" data-bs-toggle="collapse" data-bs-target="#formNuevoPedido">Cancelar</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Lista de pedidos -->
-<div class="card-erp card-compras-pedido mb-3">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-            <div>
-                <span class="text-muted">Proveedor</span>
-                <p class="mb-0 fw-bold">Suministros Industriales S.A.</p>
+<div id="listaPedidos">
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-cart-x display-1 text-muted"></i>
+            <p class="mt-3">No hay pedidos registrados.</p>
+        </div>
+    }
+    @foreach (var compra in Model)
+    {
+        var totalPagado = compra.PagosCompra?.Sum(p => p.Monto) ?? 0;
+        var saldoRestante = compra.Total - totalPagado;
+        var estaPagado = saldoRestante <= 0;
+        var diasParaVencer = compra.FechaVencimiento.HasValue ? (compra.FechaVencimiento.Value - DateTime.UtcNow).TotalDays : 999;
+        var esVencimientoProximo = !estaPagado && diasParaVencer <= 3 && diasParaVencer >= 0;
+        var estaVencido = !estaPagado && diasParaVencer < 0;
+
+        <div class="card-erp card-compras-pedido mb-3 @(estaVencido ? "border-danger" : esVencimientoProximo ? "border-warning" : "")" data-id="@compra.IdCompra">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <span class="text-muted small">Proveedor</span>
+                        <p class="mb-0 fw-bold">@compra.Proveedor.RazonSocial</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        @if (estaPagado)
+                        {
+                            <span class="badge-erp success"><i class="bi bi-cash-stack me-1"></i>Pagado</span>
+                        }
+                        else if (totalPagado > 0)
+                        {
+                            <span class="badge-erp warning"><i class="bi bi-cash me-1"></i>Pago Parcial</span>
+                        }
+                        else
+                        {
+                            <span class="badge-erp danger"><i class="bi bi-hourglass-split me-1"></i>Pendiente de Pago</span>
+                        }
+
+                        @if (compra.Estado == "Recibida")
+                        {
+                            <span class="badge-erp success"><i class="bi bi-check-circle me-1"></i>Recibida</span>
+                        }
+                        else if (compra.Estado == "Pendiente")
+                        {
+                            <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pedido Pendiente</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <span class="text-muted small d-block">Fecha Pedido:</span>
+                        <span>@compra.Fecha.ToString("dd/MM/yyyy HH:mm")</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small d-block">Vence:</span>
+                        @if (compra.FechaVencimiento.HasValue)
+                        {
+                            <span class="@(estaVencido ? "text-danger fw-bold" : esVencimientoProximo ? "text-warning fw-bold" : "")">
+                                @compra.FechaVencimiento.Value.ToString("dd/MM/yyyy")
+                                @if (estaVencido) { <small>(VENCIDO)</small> }
+                                else if (esVencimientoProximo) { <small>(Próximo)</small> }
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Sin fecha</span>
+                        }
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small d-block">Factura:</span>
+                        <span>@(string.IsNullOrEmpty(compra.NumeroFactura) ? "N/A" : compra.NumeroFactura)</span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted small d-block">Total Pedido:</span>
+                        <span class="fw-bold text-primary">C$ @compra.Total.ToString("N2")</span>
+                        @if (!estaPagado && totalPagado > 0)
+                        {
+                            <small class="d-block text-muted">Pendiente: C$ @saldoRestante.ToString("N2")</small>
+                        }
+                    </div>
+                </div>
+                
+                <div class="p-3 rounded mb-3 bg-light border-start border-4 border-primary">
+                    <strong class="d-block mb-2 small text-uppercase">Detalle de Artículos:</strong>
+                    @foreach (var detalle in compra.DetalleCompras)
+                    {
+                        <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-10 py-1">
+                            <span>@detalle.Producto?.Nombre (@detalle.Presentacion?.NombrePresentacion) x @detalle.Cantidad.ToString("N0")</span>
+                            <span class="fw-bold">C$ @((detalle.Cantidad * detalle.PrecioUnitario).ToString("N2"))</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    @if (compra.Estado == "Pendiente")
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-compra" data-id="@compra.IdCompra">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                        
+                        <div class="ms-auto d-flex gap-2">
+                             @if (!estaPagado)
+                             {
+                                <button type="button" class="btn btn-sm btn-erp-primary btn-pagar-recibir" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                                    <i class="bi bi-cash-stack me-1"></i> Pagar y Recibir
+                                </button>
+                             }
+                            <button type="button" class="btn btn-sm btn-success btn-recibir-compra" data-id="@compra.IdCompra">
+                                <i class="bi bi-box-seam me-1"></i> Solo Recibir
+                            </button>
+                        </div>
+                    }
+                    else if (!estaPagado)
+                    {
+                        <button type="button" class="btn btn-sm btn-erp-primary ms-auto btn-pagar-solo" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                            <i class="bi bi-cash me-1"></i> Registrar Pago
+                        </button>
+                    }
+                    else
+                    {
+                        <span class="text-muted small ms-auto"><i class="bi bi-check-all me-1"></i> Operación completada y pagada.</span>
+                    }
+                </div>
             </div>
-            <span class="badge-erp success"><i class="bi bi-check-circle me-1"></i>Completada</span>
         </div>
-        <p class="mb-1"><span class="text-muted">Fecha</span> 2026-01-15</p>
-        <p class="mb-2"><span class="text-muted">Total</span> <strong>$198.75</strong></p>
-        <div class="p-3 rounded mb-3" style="background: #f8f9fa;">
-            <strong class="d-block mb-2">Artículos:</strong>
-            <div class="d-flex justify-content-between"><span>Láminas de Zinc - 10 láminas</span><span>$155.00</span></div>
-            <div class="d-flex justify-content-between"><span>Tuberías de Cobre - 5 metros</span><span>$43.75</span></div>
-        </div>
-        <div class="action-icons">
-            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-pencil"></i> Editar</button>
-            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-trash"></i> Eliminar</button>
+    }
+</div>
+
+<!-- Modal Proveedores -->
+<div class="modal fade modal-erp" id="modalProveedores" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold">Gestionar Proveedores</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <div class="row">
+                    <!-- Formulario Nuevo Proveedor -->
+                    <div class="col-md-5 border-end">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-3">Nuevo Proveedor</label>
+                        <form id="formNuevoProveedorModal" class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Razón Social *</label>
+                                <input type="text" id="modalProvRazonSocial" class="form-control-erp" required placeholder="Ej: Aceros Industriales S.A.">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Tipo Doc. *</label>
+                                <select id="modalProvTipoDoc" class="form-select">
+                                    <option value="RUC">RUC</option>
+                                    <option value="DNI">DNI</option>
+                                    <option value="PASAPORTE">Pasaporte</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Número Doc. *</label>
+                                <input type="text" id="modalProvNumDoc" class="form-control-erp" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Teléfono</label>
+                                <input type="text" id="modalProvTelefono" class="form-control-erp">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Email</label>
+                                <input type="email" id="modalProvEmail" class="form-control-erp">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Dirección</label>
+                                <input type="text" id="modalProvDireccion" class="form-control-erp">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold">Nombre de Contacto</label>
+                                <input type="text" id="modalProvContacto" class="form-control-erp">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Plazo Pago (días)</label>
+                                <input type="number" id="modalProvPlazo" class="form-control-erp" value="0">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold">Observaciones</label>
+                                <textarea id="modalProvObs" class="form-control-erp" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-12 mt-3">
+                                <button class="btn btn-primary w-100" type="button" onclick="guardarProveedorModal()">
+                                    <i class="bi bi-save me-1"></i> Guardar Proveedor
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- Lista de Proveedores -->
+                    <div class="col-md-7">
+                        <label class="form-label fw-bold small text-uppercase text-muted mb-3">Proveedores Registrados</label>
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="table table-sm table-erp">
+                                <thead>
+                                    <tr>
+                                        <th>Proveedor</th>
+                                        <th>Documento</th>
+                                        <th>Contacto</th>
+                                        <th class="text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listaProveedoresModal">
+                                    @foreach (var p in proveedores)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold">@p.RazonSocial</div>
+                                                <small class="text-muted">@p.Telefono</small>
+                                            </td>
+                                            <td>@p.TipoDocumento: @p.NumeroDocumento</td>
+                                            <td>@p.ContactoNombre</td>
+                                            <td class="text-center">
+                                                <span class="badge-erp @(p.Estado ? "success" : "danger")">@(p.Estado ? "Activo" : "Inactivo")</span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="card-erp card-compras-pedido mb-3">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-            <div>
-                <span class="text-muted">Proveedor</span>
-                <p class="mb-0 fw-bold">Metalúrgica Depósito</p>
+<!-- Modal Registro de Pago -->
+<div class="modal fade modal-erp" id="modalPago" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white border-bottom-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-cash-coin me-2"></i>Registrar Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pendiente</span>
-        </div>
-        <p class="mb-1"><span class="text-muted">Fecha</span> 2026-01-18</p>
-        <p class="mb-2"><span class="text-muted">Total</span> <strong>$125.00</strong></p>
-        <div class="p-3 rounded mb-3" style="background: #f8f9fa;">
-            <strong class="d-block mb-2">Artículos:</strong>
-            <div class="d-flex justify-content-between"><span>Pernos de Acero - 5 cajas</span><span>$125.00</span></div>
-        </div>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-pencil"></i> Editar</button>
-            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-trash"></i> Eliminar</button>
-            <button type="button" class="btn-erp-primary btn-sm ms-auto"><i class="bi bi-check-lg"></i> Marcar como Recibido</button>
+            <form id="formPago">
+                <input type="hidden" id="pagoIdCompra" />
+                <input type="hidden" id="pagoModoOperacion" /><!-- 'solo' o 'recibir' -->
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <span class="text-muted d-block small mb-1">Total Pendiente:</span>
+                        <h2 class="fw-bold text-primary" id="pagoSaldoMonto">C$ 0.00</h2>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Monto a Pagar</label>
+                            <div class="input-group">
+                                <span class="input-group-text">C$</span>
+                                <input type="number" id="pagoMonto" class="form-control-erp" step="0.01" required />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Método de Pago</label>
+                            <select id="pagoMetodo" class="form-select" required>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Comprobante (Opcional)</label>
+                            <input type="text" id="pagoComprobante" class="form-control-erp" placeholder="Ej: #123456" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4" id="btnConfirmarPago">Confirmar Pago</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<div class="card-erp card-compras-pedido mb-3">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-            <div>
-                <span class="text-muted">Proveedor</span>
-                <p class="mb-0 fw-bold">Fasteners Directo</p>
-            </div>
-            <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pendiente</span>
-        </div>
-        <p class="mb-1"><span class="text-muted">Fecha</span> 2026-01-19</p>
-        <p class="mb-2"><span class="text-muted">Total</span> <strong>$50.00</strong></p>
-        <div class="p-3 rounded mb-3" style="background: #f8f9fa;">
-            <strong class="d-block mb-2">Artículos:</strong>
-            <div class="d-flex justify-content-between"><span>Clavos - 10 cajas</span><span>$50.00</span></div>
-        </div>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-pencil"></i> Editar</button>
-            <button type="button" class="btn-erp-secondary btn-sm"><i class="bi bi-trash"></i> Eliminar</button>
-            <button type="button" class="btn-erp-primary btn-sm ms-auto"><i class="bi bi-check-lg"></i> Marcar como Recibido</button>
-        </div>
-    </div>
-</div>
+@section Scripts {
+    <script>
+        let detallePedido = [];
+        let modalPago;
+
+        function getModalPago() {
+            if (!modalPago) {
+                const el = document.getElementById('modalPago');
+                if (el) modalPago = new bootstrap.Modal(el);
+            }
+            return modalPago;
+        }
+
+        // Funciones para abrir modal de pago
+        $(document).on('click', '.btn-pagar-recibir', function() {
+            const id = $(this).data('id');
+            const total = $(this).data('total');
+            $('#pagoIdCompra').val(id);
+            $('#pagoSaldoMonto').text('C$ ' + parseFloat(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            $('#pagoMonto').val(total);
+            $('#pagoModoOperacion').val('recibir');
+            $('#btnConfirmarPago').text('Pagar y Recibir Mercadería');
+            getModalPago()?.show();
+        });
+
+        $(document).on('click', '.btn-pagar-solo', function() {
+            const id = $(this).data('id');
+            const total = $(this).data('total');
+            $('#pagoIdCompra').val(id);
+            $('#pagoSaldoMonto').text('C$ ' + parseFloat(total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+            $('#pagoMonto').val(total);
+            $('#pagoModoOperacion').val('solo');
+            $('#btnConfirmarPago').text('Registrar Sólo Pago');
+            getModalPago()?.show();
+        });
+
+        $('#formPago').submit(async function(e) {
+            e.preventDefault();
+            const mode = $('#pagoModoOperacion').val();
+            const id = $('#pagoIdCompra').val();
+            const data = {
+                id: id,
+                idCompra: id,
+                monto: $('#pagoMonto').val(),
+                metodo: $('#pagoMetodo').val(),
+                comprobante: $('#pagoComprobante').val()
+            };
+
+            const url = mode === 'recibir' ? '/Compras/PagarYRecibir' : '/Compras/RegistrarPago';
+            const actionText = mode === 'recibir' ? '¿Desea registrar el pago e ingresar la mercadería al stock?' : '¿Confirmar el registro de este pago?';
+
+            showConfirm('Confirmar Operación', actionText, async () => {
+                const $btn = $('#btnConfirmarPago');
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Procesando...');
+                
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const res = await response.json();
+                    if (res.success) {
+                        showNotification('¡Éxito!', res.message, 'success');
+                        getModalPago()?.hide();
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error', res.message, 'error');
+                        $btn.prop('disabled', false).text('Confirmar Pago');
+                    }
+                } catch (e) {
+                    showNotification('Error', 'Fallo en la comunicación con el servidor', 'error');
+                    $btn.prop('disabled', false).text('Confirmar Pago');
+                }
+            }, mode === 'recibir' ? 'success' : 'primary');
+        });
+
+        async function rapidoCrearProveedor() {
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-prompt-overlay';
+            overlay.innerHTML = `
+                <div class="custom-prompt-card" style="max-width: 600px;">
+                    <h5 class="fw-bold mb-3">Nuevo Proveedor (Registro Rápido)</h5>
+                    <div class="row g-2">
+                        <div class="col-md-12 mb-2">
+                            <label class="form-label small fw-bold">Razón Social *</label>
+                            <input type="text" id="promptProvNombre" class="form-control-erp" placeholder="Ej: Aceros S.A.">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold">Tipo Doc. *</label>
+                            <select id="promptProvTipoDoc" class="form-select">
+                                <option value="RUC">RUC</option>
+                                <option value="DNI">DNI</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold">Número *</label>
+                            <input type="text" id="promptProvNumDoc" class="form-control-erp" placeholder="12345678">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold">Teléfono</label>
+                            <input type="text" id="promptProvTelefono" class="form-control-erp">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold">Email</label>
+                            <input type="email" id="promptProvEmail" class="form-control-erp">
+                        </div>
+                        <div class="col-12 mb-2">
+                            <label class="form-label small fw-bold">Dirección</label>
+                            <input type="text" id="promptProvDireccion" class="form-control-erp">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold">Contacto</label>
+                            <input type="text" id="promptProvContacto" class="form-control-erp">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small fw-bold">Plazo Pago (días)</label>
+                            <input type="number" id="promptProvPlazo" class="form-control-erp" value="0">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button class="btn-erp-secondary" onclick="this.closest('.custom-prompt-overlay').remove()">Cancelar</button>
+                        <button class="btn-erp-primary" id="btnPromptSaveProv">Crear Proveedor</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            const input = overlay.querySelector('#promptProvNombre');
+            setTimeout(() => input.focus(), 100);
+
+            overlay.querySelector('#btnPromptSaveProv').onclick = async () => {
+                const data = {
+                    razonSocial: input.value.trim(),
+                    tipoDocumento: overlay.querySelector('#promptProvTipoDoc').value,
+                    numeroDocumento: overlay.querySelector('#promptProvNumDoc').value.trim(),
+                    telefono: overlay.querySelector('#promptProvTelefono').value.trim(),
+                    email: overlay.querySelector('#promptProvEmail').value.trim(),
+                    direccion: overlay.querySelector('#promptProvDireccion').value.trim(),
+                    contactoNombre: overlay.querySelector('#promptProvContacto').value.trim(),
+                    plazoPago: parseInt(overlay.querySelector('#promptProvPlazo').value) || 0,
+                    estado: true
+                };
+
+                if (!data.razonSocial || !data.numeroDocumento) {
+                    showNotification('Error', 'Nombre y documento son obligatorios', 'error');
+                    return;
+                }
+                
+                const btn = overlay.querySelector('#btnPromptSaveProv');
+                btn.disabled = true;
+                btn.innerText = 'Guardando...';
+
+                try {
+                    const response = await fetch('/Compras/CrearProveedor', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        const select = document.getElementById('selectProveedor');
+                        select.add(new Option(data.razonSocial, result.id));
+                        select.value = result.id;
+                        showNotification('¡Éxito!', 'Proveedor creado correctamente', 'success');
+                        overlay.remove();
+                    } else {
+                        showNotification('Error', result.message || 'Error al crear', 'error');
+                        btn.disabled = false;
+                        btn.innerText = 'Crear Proveedor';
+                    }
+                } catch (e) { 
+                    showNotification('Error', 'Error de conexión', 'error'); 
+                    btn.disabled = false;
+                    btn.innerText = 'Crear Proveedor';
+                }
+            };
+        }
+
+        async function guardarProveedorModal() {
+            const data = {
+                razonSocial: $('#modalProvRazonSocial').val().trim(),
+                tipoDocumento: $('#modalProvTipoDoc').val(),
+                numeroDocumento: $('#modalProvNumDoc').val().trim(),
+                telefono: $('#modalProvTelefono').val().trim(),
+                email: $('#modalProvEmail').val().trim(),
+                direccion: $('#modalProvDireccion').val().trim(),
+                contactoNombre: $('#modalProvContacto').val().trim(),
+                plazoPago: parseInt($('#modalProvPlazo').val()) || 0,
+                observaciones: $('#modalProvObs').val().trim(),
+                estado: true
+            };
+
+            if (!data.razonSocial || !data.numeroDocumento) {
+                showNotification('Error', 'Razón Social y Número Documento son obligatorios', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/Compras/CrearProveedor', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('¡Listado!', 'Proveedor guardado y actualizado en el sistema', 'success');
+                    
+                    // Actualizar selector principal
+                    const select = document.getElementById('selectProveedor');
+                    select.add(new Option(data.razonSocial, result.id));
+                    
+                    // Agregar a la tabla del modal
+                    const row = `<tr>
+                        <td>
+                            <div class="fw-bold">${data.razonSocial}</div>
+                            <small class="text-muted">${data.telefono}</small>
+                        </td>
+                        <td>${data.tipoDocumento}: ${data.numeroDocumento}</td>
+                        <td>${data.contactoNombre}</td>
+                        <td class="text-center">
+                            <span class="badge-erp success">Activo</span>
+                        </td>
+                    </tr>`;
+                    $('#listaProveedoresModal').prepend(row);
+                    
+                    // Limpiar form
+                    document.getElementById('formNuevoProveedorModal').reset();
+                } else {
+                    showNotification('Error', result.message, 'error');
+                }
+            } catch (e) {
+                showNotification('Error', 'No se pudo guardar el proveedor', 'error');
+            }
+        }
+
+        $(document).ready(function() {
+            // Actualizar presentaciones cuando cambia el producto
+            $('#selectProducto').change(function() {
+                const $option = $(this).find(':selected');
+                const $selectPres = $('#selectPresentacion');
+                
+                $selectPres.empty().append('<option value="">Seleccione presentación...</option>');
+                
+                const rawData = $option.attr('data-presentaciones');
+                if (rawData) {
+                    try {
+                        const presentaciones = JSON.parse(rawData);
+                        presentaciones.forEach(p => {
+                            // Usar camelCase ya que Program.cs tiene configurado PropertyNamingPolicy = CamelCase
+                            $selectPres.append(`<option value="${p.idPresentacion}" data-factor="${p.factorConversion}" data-precio="${p.precioCompra || 0}">${p.nombrePresentacion}</option>`);
+                        });
+                    } catch (e) {
+                        console.error("Error parsing presentations:", e, rawData);
+                    }
+                }
+            });
+
+            // Actualizar precio cuando cambia la presentación
+            $('#selectPresentacion').change(function() {
+                const precio = $(this).find(':selected').data('precio');
+                $('#inputPrecio').val(precio);
+            });
+
+            // Agregar item a la lista
+            $('#btnAgregarItem').click(function() {
+                const idProd = $('#selectProducto').val();
+                const nombreProd = $('#selectProducto option:selected').text().trim();
+                const idPres = $('#selectPresentacion').val();
+                const nombrePres = $('#selectPresentacion option:selected').text();
+                const factor = parseFloat($('#selectPresentacion option:selected').data('factor'));
+                const cantidad = parseFloat($('#inputCantidad').val());
+                const precio = parseFloat($('#inputPrecio').val());
+
+                if (!idProd || !idPres || isNaN(cantidad) || cantidad <= 0 || isNaN(precio)) {
+                    showNotification('Incompleto', 'Por favor complete todos los campos del producto.', 'warning');
+                    return;
+                }
+
+                const item = {
+                    IdProducto: parseInt(idProd),
+                    NombreProducto: nombreProd,
+                    IdPresentacion: parseInt(idPres),
+                    NombrePresentacion: nombrePres,
+                    Cantidad: cantidad,
+                    CantidadBase: cantidad * factor,
+                    PrecioUnitario: precio,
+                    Subtotal: cantidad * precio
+                };
+
+                detallePedido.push(item);
+                renderTabla();
+                
+                // Limpiar campos
+                $('#selectProducto').val('').trigger('change');
+                $('#inputCantidad').val(1);
+                $('#inputPrecio').val('');
+            });
+
+            function renderTabla() {
+                const $tbody = $('#tablaDetalle tbody');
+                $tbody.empty();
+                let total = 0;
+
+                detallePedido.forEach((item, index) => {
+                    total += item.Subtotal;
+                    $tbody.append(`
+                        <tr>
+                            <td>${item.NombreProducto}</td>
+                            <td>${item.NombrePresentacion}</td>
+                            <td class="text-center">${item.Cantidad}</td>
+                            <td class="text-end">${item.PrecioUnitario.toFixed(2)}</td>
+                            <td class="text-end">${item.Subtotal.toFixed(2)}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-link text-danger" onclick="eliminarItem(${index})">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+                });
+
+                $('#totalPedido').text(total.toFixed(2));
+            }
+
+            window.eliminarItem = function(index) {
+                detallePedido.splice(index, 1);
+                renderTabla();
+            }
+
+            // Guardar Pedido
+            $('#btnGuardarPedido').click(function() {
+                const idProv = $('#selectProveedor').val();
+                const numFact = $('#inputNumFactura').val();
+
+                if (!idProv) {
+                    showNotification('Atención', 'Debe seleccionar un proveedor.', 'warning');
+                    return;
+                }
+
+                if (detallePedido.length === 0) {
+                    showNotification('Atención', 'Debe agregar al menos un producto a la lista.', 'warning');
+                    return;
+                }
+
+                const $btn = $(this);
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Guardando...');
+
+                const data = {
+                    idProveedor: parseInt(idProv),
+                    numeroFactura: numFact,
+                    total: detallePedido.reduce((sum, item) => sum + item.Subtotal, 0),
+                    detalleCompras: detallePedido.map(item => ({
+                        idProducto: item.IdProducto,
+                        idPresentacion: item.IdPresentacion,
+                        cantidad: item.Cantidad,
+                        cantidadBase: item.CantidadBase,
+                        precioUnitario: item.PrecioUnitario
+                    }))
+                };
+
+                $.ajax({
+                    url: '/Compras/Crear',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function(res) {
+                        if (res.success) {
+                            showNotification('¡Éxito!', res.message, 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            let msg = res.message;
+                            if (res.errors && res.errors.length > 0) {
+                                msg += ": " + res.errors.join(", ");
+                            }
+                            showNotification('Error', msg, 'error');
+                            $btn.prop('disabled', false).html('<i class="bi bi-save"></i> Guardar Pedido');
+                        }
+                    },
+                    error: function() {
+                        showNotification('Error', 'Error crítico al intentar guardar el pedido.', 'error');
+                        $btn.prop('disabled', false).html('<i class="bi bi-save"></i> Guardar Pedido');
+                    }
+                });
+            });
+
+            // Recibir Compra
+            $('.btn-recibir-compra').click(function() {
+                const id = $(this).data('id');
+                showConfirm('Recibir Compra', '¿Desea marcar esta compra como recibida? Esto aumentará el stock de los productos.', () => {
+                    $.post('/Compras/Recibir', { id: id }, function(res) {
+                        if (res.success) {
+                            showNotification('Stock Actualizado', res.message, 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showNotification('Error', res.message, 'error');
+                        }
+                    });
+                }, 'success');
+            });
+
+            // Eliminar Compra
+            $('.btn-eliminar-compra').click(function() {
+                const id = $(this).data('id');
+                showConfirm('¿Eliminar Pedido?', '¿Está seguro de eliminar este pedido?', () => {
+                    $.post('/Compras/Eliminar', { id: id }, function(res) {
+                        if (res.success) {
+                            showNotification('Removido', res.message, 'success');
+                            setTimeout(() => location.reload(), 800);
+                        } else {
+                            showNotification('Error', res.message, 'error');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+}

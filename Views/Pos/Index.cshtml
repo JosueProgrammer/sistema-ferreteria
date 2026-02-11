@@ -635,7 +635,7 @@
 
          document.getElementById('btnPayment').addEventListener('click', () => {
              if(cart.length === 0) {
-                 alert('Agregue productos primero.');
+                 showNotification('Carrito Vacío', 'Agregue productos primero.', 'warning');
                  return;
              }
              productScreen.style.display = 'none';
@@ -655,10 +655,10 @@
          });
 
          document.getElementById('btnValidateSale').addEventListener('click', () => {
-             if (confirm('¿Confirmar venta y generar factura?')) {
-                 alert('Venta realizada con éxito!');
-                 window.location.reload();
-             }
+             showConfirm('Confirmar Venta', '¿Deseas finalizar la venta y generar la factura?', () => {
+                 showNotification('Éxito', 'Venta realizada con éxito!', 'success');
+                 setTimeout(() => window.location.reload(), 1000);
+             }, 'primary');
          });
 
         document.getElementById('searchProductos').addEventListener('input', function(e) {

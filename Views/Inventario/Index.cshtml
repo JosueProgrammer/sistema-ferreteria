@@ -1,184 +1,947 @@
+@model IEnumerable<Sistema_Ferreteria.Models.Inventario.Producto>
 @{
     ViewData["Title"] = "Inventario";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    var categorias = ViewBag.Categorias as IEnumerable<Sistema_Ferreteria.Models.Inventario.Categoria>;
+    var unidades = ViewBag.UnidadesMedida as IEnumerable<Sistema_Ferreteria.Models.Inventario.UnidadMedida>;
 }
 
-<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div class="page-header mb-0">
         <h1>Inventario</h1>
-        <p class="subtitle">Gestionar productos y niveles de stock</p>
+        <p class="subtitle">Gestionar productos, categorías y niveles de stock</p>
     </div>
-    <button type="button" class="btn-erp-primary" data-bs-toggle="modal" data-bs-target="#modalAgregarProducto">
-        <i class="bi bi-plus-lg"></i>
-        Agregar Producto
-    </button>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalCategorias">
+            <i class="bi bi-tags"></i>
+            Categorías
+        </button>
+        <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalUnidades">
+            <i class="bi bi-rulers"></i>
+            Unidades
+        </button>
+        <button type="button" class="btn-erp-primary" onclick="abrirModalNuevo()">
+            <i class="bi bi-plus-lg"></i>
+            Agregar Producto
+        </button>
+    </div>
 </div>
 
-<!-- Búsqueda de productos -->
-<div class="card-erp mb-4">
-    <div class="card-header">Búsqueda de Productos</div>
-    <div class="card-body">
-        <div class="search-wrap">
-            <i class="bi bi-search search-icon"></i>
-            <input type="text" class="form-control-erp" placeholder="Buscar productos..." />
+@{
+    var totalInversion = Model.Sum(p => (p.PrecioBaseCompra ?? 0) * p.StockBase);
+    var totalCategorias = categorias?.Count() ?? 0;
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="summary-card h-100 border-erp-blue border-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="summary-icon blue">
+                    <i class="bi bi-box"></i>
+                </div>
+                <div class="summary-title" style="font-size: 0.9rem; color: #6c757d;">Total Productos</div>
+            </div>
+            <div class="summary-value h3 fw-bold mb-1">@Model.Count()</div>
+            <div class="summary-indicator muted small">En catálogo</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="summary-card h-100 border-start border-erp-orange border-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="summary-icon orange">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="summary-title" style="font-size: 0.9rem; color: #6c757d;">Stock Bajo</div>
+            </div>
+            <div class="summary-value h3 fw-bold mb-1 text-warning">@Model.Count(p => p.StockBase <= p.StockMinimo)</div>
+            <div class="summary-indicator warning small">Necesitan reabastecer</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="summary-card h-100 border-start border-erp-green border-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="summary-icon green">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="summary-title" style="font-size: 0.9rem; color: #6c757d;">Valor Inventario</div>
+            </div>
+            <div class="summary-value h3 fw-bold mb-1 text-success">C$ @totalInversion.ToString("N2")</div>
+            <div class="summary-indicator success small">Inversión estimada</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="summary-card h-100 border-start border-erp-purple border-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="summary-icon purple">
+                    <i class="bi bi-tags"></i>
+                </div>
+                <div class="summary-title" style="font-size: 0.9rem; color: #6c757d;">Categorías</div>
+            </div>
+            <div class="summary-value h3 fw-bold mb-1">@totalCategorias</div>
+            <div class="summary-indicator muted small">Rubros activos</div>
         </div>
     </div>
 </div>
 
-<!-- Tabla de productos -->
-<div class="card-erp">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span>Productos</span>
-        <span class="text-muted small fw-normal">Productos totales: 5</span>
+<!-- Búsqueda -->
+<div class="card-erp mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <div class="search-wrap">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="filtroBusqueda" class="form-control-erp" placeholder="Buscar por nombre, código o código de barras..." onkeyup="filtrarProductos()" />
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select id="filtroCategoria" class="form-select" onchange="filtrarProductos()">
+                    <option value="">Todas las categorías</option>
+                    @foreach (var cat in categorias!)
+                    {
+                        <option value="@cat.IdCategoria">@cat.Nombre</option>
+                    }
+                </select>
+            </div>
+        </div>
     </div>
-    <div class="card-body p-0">
+</div>
+
+<!-- Tabla / Cuadrícula -->
+<div class="card-erp">
+    <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
+        <span class="fw-bold text-dark"><i class="bi bi-grid-3x3-gap-fill me-2 text-primary"></i>Catálogo de Productos</span>
+        <div class="view-toggle-group">
+            <button type="button" class="view-toggle-btn active" onclick="cambiarVista('tabla', this)" title="Vista de Tabla">
+                <i class="bi bi-list-ul"></i> Tabla
+            </button>
+            <button type="button" class="view-toggle-btn" onclick="cambiarVista('cuadricula', this)" title="Vista de Cuadrícula">
+                <i class="bi bi-grid-fill"></i> Cuadrícula
+            </button>
+        </div>
+    </div>
+    <div id="vistaTabla" class="card-body p-0">
         <div class="table-responsive">
-            <table class="table-erp">
+            <table class="table-erp" id="tablaProductos">
                 <thead>
                     <tr>
-                        <th>Nombre</th>
+                        <th>Código SKU</th>
+                        <th>Nombre / Descripción</th>
                         <th>Categoría</th>
-                        <th>Unidad Base</th>
-                        <th>Stock</th>
+                        <th>Stock Actual</th>
+                        <th>Precio Venta</th>
                         <th>Estado</th>
-                        <th>Precio</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Láminas de Zinc</td>
-                        <td>Láminas</td>
-                        <td>metro</td>
-                        <td>3 láminas y 1 metro</td>
-                        <td><span class="badge-erp success">En Stock</span></td>
-                        <td>$15.50</td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
-                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
-                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Pernos de Acero</td>
-                        <td>Fasteners</td>
-                        <td>unidad</td>
-                        <td>2 cajas y 24 unidades</td>
-                        <td><span class="badge-erp warning">Stock Bajo</span></td>
-                        <td>$0.25</td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
-                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
-                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Tornillos de Madera</td>
-                        <td>Fasteners</td>
-                        <td>unidad</td>
-                        <td>5 cajas y 120 unidades</td>
-                        <td><span class="badge-erp success">En Stock</span></td>
-                        <td>$0.15</td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
-                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
-                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Tuberías de Cobre</td>
-                        <td>Tuberías</td>
-                        <td>metro</td>
-                        <td>12 metros</td>
-                        <td><span class="badge-erp success">En Stock</span></td>
-                        <td>$8.75</td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
-                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
-                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Clavos</td>
-                        <td>Fasteners</td>
-                        <td>unidad</td>
-                        <td>8 cajas</td>
-                        <td><span class="badge-erp success">En Stock</span></td>
-                        <td>$5.00</td>
-                        <td>
-                            <div class="action-icons">
-                                <a href="#" title="Ver"><i class="bi bi-eye"></i></a>
-                                <a href="#" title="Editar"><i class="bi bi-pencil"></i></a>
-                                <a href="#" title="Eliminar"><i class="bi bi-trash"></i></a>
-                            </div>
-                        </td>
-                    </tr>
+                    @foreach (var item in Model)
+                    {
+                        <tr data-categoria="@item.IdCategoria">
+                            <td class="fw-bold">@item.Codigo</td>
+                            <td>
+                                <div class="fw-semibold">@item.Nombre</div>
+                                <small class="text-muted d-block">@(string.IsNullOrEmpty(item.CodigoBarras) ? "Sin código de barras" : item.CodigoBarras)</small>
+                            </td>
+                            <td><span class="badge-erp secondary">@item.Categoria?.Nombre</span></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="fw-bold @(item.StockBase <= item.StockMinimo ? "text-danger" : "text-success")">
+                                        @item.StockBase.ToString("N2")
+                                    </span>
+                                    <small class="text-muted">@item.UnidadBase?.Codigo</small>
+                                </div>
+                            </td>
+                             <td><span class="text-primary fw-bold">C$ @((item.PrecioBaseVenta ?? 0).ToString("N2"))</span></td>
+                            <td>
+                                @if (item.Estado)
+                                {
+                                    <span class="badge-erp success">Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-erp danger">Inactivo</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="action-icons">
+                                    <button onclick="abrirModalAjuste(@item.IdProducto, '@item.Nombre')" title="Ajustar Stock" class="text-warning"><i class="bi bi-box-seam"></i></button>
+                                    <button onclick='prepararEdicion(@Html.Raw(Json.Serialize(item)))' title="Editar" class="text-primary"><i class="bi bi-pencil"></i></button>
+                                    <button onclick="eliminarProducto(@item.IdProducto)" title="Eliminar" class="text-danger"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Vista de Cuadrícula -->
+    <div id="vistaCuadricula" class="card-body p-0 d-none">
+        <div class="product-grid" id="gridProductos">
+            @foreach (var item in Model)
+            {
+                <div class="product-card" data-categoria="@item.IdCategoria">
+                    <div class="product-status-tag">
+                        @if (item.Estado)
+                        {
+                            <span class="badge-erp success">Activo</span>
+                        }
+                        else
+                        {
+                            <span class="badge-erp danger">Inactivo</span>
+                        }
+                    </div>
+                    <div class="product-card-body">
+                        <div class="product-card-sku">@item.Codigo</div>
+                        <h3 class="product-card-title">@item.Nombre</h3>
+                        <p class="text-muted small mb-0">@(string.IsNullOrEmpty(item.Descripcion) ? "Sin descripción" : item.Descripcion)</p>
+                        
+                        <div class="product-card-info">
+                            <div class="info-item">
+                                <span class="info-label">Categoría:</span>
+                                <span class="badge-erp secondary">@item.Categoria?.Nombre</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Stock Actual:</span>
+                                <span class="info-value @(item.StockBase <= item.StockMinimo ? "text-danger" : "text-success")">
+                                    @item.StockBase.ToString("N2") @item.UnidadBase?.Codigo
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Precio:</span>
+                                 <span class="info-value text-primary fs-5">C$ @((item.PrecioBaseVenta ?? 0).ToString("N2"))</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="product-card-footer">
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="abrirModalAjuste(@item.IdProducto, '@item.Nombre')">
+                            <i class="bi bi-box-seam me-1"></i> Ajustar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick='prepararEdicion(@Html.Raw(Json.Serialize(item)))'>
+                            <i class="bi bi-pencil me-1"></i> Editar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarProducto(@item.IdProducto)">
+                            <i class="bi bi-trash me-1"></i> Eliminar
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
 </div>
 
-<!-- Modal Agregar Producto -->
-<div class="modal fade modal-erp" id="modalAgregarProducto" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Product</h5>
+<!-- Modal Producto -->
+<div class="modal fade modal-erp" id="modalProducto" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-light border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalTitulo">Nuevo Producto</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-4">
-                    <label class="form-label form-erp">Product Name</label>
-                    <input type="text" class="form-control-erp" placeholder="e.g., Zinc Sheets" />
+            
+            <!-- Tabs -->
+            <ul class="nav nav-tabs tabs-erp px-4 mt-3" id="productTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info-pane" type="button" role="tab">Información Básica</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="presentaciones-tab" data-bs-toggle="tab" data-bs-target="#presentaciones-pane" type="button" role="tab">Presentaciones</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="productTabsContent">
+                <!-- Pane 1: Info Básica -->
+                <div class="tab-pane fade show active" id="info-pane" role="tabpanel">
+                    <form id="formProducto" onsubmit="guardarProducto(event)">
+                        <input type="hidden" id="IdProducto" name="IdProducto" value="0" />
+                        <div class="modal-body p-4">
+                            <div id="productErrorAlert" class="alert alert-danger d-none mb-3">
+                                <ul class="mb-0" id="productErrorList"></ul>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Código SKU *</label>
+                                    <input type="text" id="Codigo" name="Codigo" class="form-control-erp" required maxlength="50" placeholder="Ej: PROD-001" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Código de Barras</label>
+                                    <input type="text" id="CodigoBarras" name="CodigoBarras" class="form-control-erp" maxlength="50" placeholder="Escanear o ingresar código" />
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Nombre del Producto *</label>
+                                    <input type="text" id="Nombre" name="Nombre" class="form-control-erp" required maxlength="200" placeholder="Ej: Martillo de acero 16oz" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Categoría *</label>
+                                    <div class="input-group">
+                                        <select id="IdCategoria" name="IdCategoria" class="form-select" required>
+                                            <option value="">Seleccionar...</option>
+                                            @foreach (var cat in categorias!)
+                                            {
+                                                <option value="@cat.IdCategoria">@cat.Nombre</option>
+                                            }
+                                        </select>
+                                        <button class="btn btn-outline-primary" type="button" onclick="rapidoCrearCategoria()" title="Nueva Categoría">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Unidad Base *</label>
+                                    <div class="input-group">
+                                        <select id="IdUnidadBase" name="IdUnidadBase" class="form-select" required>
+                                            <option value="">Seleccionar...</option>
+                                            @foreach (var un in unidades!)
+                                            {
+                                                <option value="@un.IdUnidad">@un.Nombre (@un.Codigo)</option>
+                                            }
+                                        </select>
+                                        <button class="btn btn-outline-primary" type="button" onclick="rapidoCrearUnidad()" title="Nueva Unidad">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6" id="divStockInicial">
+                                    <label class="form-label fw-bold">Stock Inicial</label>
+                                    <input type="number" id="StockBase" name="StockBase" class="form-control-erp" step="0.0001" min="0" value="0" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Stock Mínimo</label>
+                                    <input type="number" id="StockMinimo" name="StockMinimo" class="form-control-erp" step="0.0001" min="0" value="0" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Estado</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" id="Estado" name="Estado" checked>
+                                        <label class="form-check-label" for="Estado">Producto Activo</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Precio Compra Base</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">C$</span>
+                                        <input type="number" id="PrecioBaseCompra" name="PrecioBaseCompra" class="form-control-erp" step="0.01" min="0" value="0" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Precio Venta Base</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">C$</span>
+                                        <input type="number" id="PrecioBaseVenta" name="PrecioBaseVenta" class="form-control-erp" step="0.01" min="0" value="0" />
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Descripción</label>
+                                    <textarea id="Descripcion" name="Descripcion" class="form-control-erp" rows="2" maxlength="500"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn-erp-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn-erp-primary" id="btnGuardarProducto">
+                                <i class="bi bi-save"></i> Guardar Producto
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <div class="mb-4">
-                    <label class="form-label form-erp">Category</label>
-                    <select class="form-control-erp">
-                        <option>Fasteners</option>
-                        <option>Láminas</option>
-                        <option>Tuberías</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="form-label form-erp">Base Unit</label>
-                    <select class="form-control-erp">
-                        <option>Unit</option>
-                        <option>metro</option>
-                        <option>caja</option>
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="form-label form-erp">Presentation Formats</label>
-                    <div class="d-flex gap-2 mb-2 flex-wrap">
-                        <input type="text" class="form-control-erp flex-grow-1" style="min-width: 180px;" placeholder="Name (e.g., Box, Sheet)" />
-                        <input type="text" class="form-control-erp" style="width: 120px;" placeholder="Conversion factor" />
-                        <button type="button" class="btn-erp-primary">Add</button>
-                    </div>
-                    <div class="presentation-list">
-                        <div class="d-flex align-items-center justify-content-between py-2 px-3 mb-2" style="background: #f8f9fa; border-radius: 8px;">
-                            <span>wd = 12 units</span>
-                            <button type="button" class="btn-erp-secondary btn-sm">Remove</button>
+
+                <!-- Pane 2: Presentaciones -->
+                <div class="tab-pane fade" id="presentaciones-pane" role="tabpanel">
+                    <div class="modal-body p-4">
+                        <div class="alert alert-info py-2 small">
+                            <i class="bi bi-info-circle me-2"></i> Aquí puedes configurar cómo vendes este producto (Ej: Caja de 12, Bolsa de 5kg).
+                        </div>
+                        <div class="bg-light p-3 rounded mb-3">
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Nombre</label>
+                                    <input type="text" id="presNombre" class="form-control-erp" placeholder="Ej: Caja">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Unidad</label>
+                                    <select id="presUnidad" class="form-select">
+                                        @foreach (var un in unidades!)
+                                        {
+                                            <option value="@un.IdUnidad">@un.Nombre</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="small fw-bold">Factor</label>
+                                    <input type="number" id="presFactor" class="form-control-erp" placeholder="1" value="1">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="small fw-bold">Precio</label>
+                                    <div class="input-group">
+                                        <input type="number" id="presPrecio" class="form-control-erp" placeholder="0.00">
+                                        <button class="btn btn-primary" type="button" onclick="agregarPresentacion()">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table-erp table-sm" id="tablaPresentaciones">
+                                <thead>
+                                    <tr>
+                                        <th>Presentación</th>
+                                        <th>Unidad</th>
+                                        <th>Factor</th>
+                                        <th>Precio</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="text-center"><td colspan="5" class="py-3 text-muted">No hay presentaciones adicionales</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-                <div class="mb-4">
-                    <label class="form-label form-erp">Unit Price</label>
-                    <input type="number" class="form-control-erp" step="0.01" placeholder="0.00" value="0.00" />
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-erp-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn-erp-primary">Guardar Producto</button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal Categorías -->
+<div class="modal fade modal-erp" id="modalCategorias" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold">Gestionar Categorías</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-uppercase text-muted">Nueva Categoría</label>
+                    <div class="input-group">
+                        <input type="text" id="nuevaCategoriaNombre" class="form-control-erp" placeholder="Nombre de categoría">
+                        <button class="btn btn-primary px-3" type="button" onclick="crearCategoria()">
+                            <i class="bi bi-plus-lg me-1"></i> Agregar
+                        </button>
+                    </div>
+                </div>
+                <label class="form-label fw-bold small text-uppercase text-muted">Existentes</label>
+                <div id="listaCategorias" class="list-group list-group-flush border rounded overflow-hidden">
+                    @foreach (var cat in categorias!)
+                    {
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <span class="fw-medium">@cat.Nombre</span>
+                            <span class="badge-erp success small">Activa</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Unidades -->
+<div class="modal fade modal-erp" id="modalUnidades" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-light border-bottom-0">
+                <h5 class="modal-title fw-bold">Unidades de Medida</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4 pt-2">
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-uppercase text-muted">Nueva Unidad</label>
+                    <div class="row g-2">
+                        <div class="col-8">
+                            <input type="text" id="nuevaUnidadNombre" class="form-control-erp" placeholder="Nombre (Ej: Kilogramo)">
+                        </div>
+                        <div class="col-4">
+                            <input type="text" id="nuevaUnidadCodigo" class="form-control-erp" placeholder="Cód (KG)">
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button class="btn btn-primary w-100" type="button" onclick="crearUnidad()">
+                                <i class="bi bi-plus-lg"></i> Agregar Unidad
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <label class="form-label fw-bold small text-uppercase text-muted">Existentes</label>
+                <div id="listaUnidades" class="list-group list-group-flush border rounded overflow-hidden">
+                    @foreach (var un in unidades!)
+                    {
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <span><strong class="me-2">@un.Codigo</strong> @un.Nombre</span>
+                            <span class="badge-erp success small">Activa</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajuste de Stock -->
+<div class="modal fade modal-erp" id="modalAjusteStock" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-warning text-dark border-bottom-0">
+                <h5 class="modal-title fw-bold"><i class="bi bi-box-seam me-2"></i>Ajustar Stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formAjuste" onsubmit="guardarAjuste(event)">
+                <input type="hidden" id="ajusteIdProducto" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Producto</label>
+                        <input type="text" id="ajusteNombreProducto" class="form-control-erp bg-light" readonly />
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Tipo de Ajuste</label>
+                            <select id="ajusteTipo" class="form-select" required>
+                                <option value="Entrada">Entrada (+)</option>
+                                <option value="Salida">Salida (-)</option>
+                                <option value="Ajuste" selected>Corrección Directa (=)</option>
+                                <option value="Merma">Merma/Daño (-)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Cantidad / Nuevo Stock</label>
+                            <input type="number" id="ajusteCantidad" class="form-control-erp" step="0.0001" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Observación / Motivo</label>
+                            <textarea id="ajusteObservacion" class="form-control-erp" rows="2" placeholder="Ej: Error de digitación, producto dañado..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning px-4">Confirmar Ajuste</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Custom Prompt for Category
+        async function rapidoCrearCategoria() {
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-prompt-overlay';
+            overlay.innerHTML = `
+                <div class="custom-prompt-card">
+                    <h5 class="fw-bold mb-3">Nueva Categoría</h5>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nombre</label>
+                        <input type="text" id="promptCatNombre" class="form-control-erp" placeholder="Ej: Pinturas">
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn-erp-secondary" onclick="this.closest('.custom-prompt-overlay').remove()">Cancelar</button>
+                        <button class="btn-erp-primary" id="btnPromptSave">Crear Categoría</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            const input = overlay.querySelector('#promptCatNombre');
+            setTimeout(() => input.focus(), 100);
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); overlay.querySelector('#btnPromptSave').click(); }
+                if (e.key === 'Escape') overlay.remove();
+            };
+
+            overlay.querySelector('#btnPromptSave').onclick = async () => {
+                const nombre = input.value.trim();
+                if (!nombre) return;
+                
+                const btn = overlay.querySelector('#btnPromptSave');
+                btn.disabled = true;
+                btn.innerText = 'Creando...';
+
+                try {
+                    const response = await fetch('/Inventario/CrearCategoria', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nombre: nombre, estado: true })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        const select = document.getElementById('IdCategoria');
+                        select.add(new Option(nombre, result.id));
+                        select.value = result.id;
+                        showNotification('¡Éxito!', 'Categoría creada correctamente');
+                        overlay.remove();
+                    } else {
+                        showNotification('Error', result.message || 'Error al crear', 'error');
+                        btn.disabled = false;
+                        btn.innerText = 'Crear Categoría';
+                    }
+                } catch (e) { 
+                    showNotification('Error', 'No se pudo crear', 'error'); 
+                    btn.disabled = false;
+                    btn.innerText = 'Crear Categoría';
+                }
+            };
+        }
+
+        // Custom Prompt for Unit
+        async function rapidoCrearUnidad() {
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-prompt-overlay';
+            overlay.innerHTML = `
+                <div class="custom-prompt-card">
+                    <h5 class="fw-bold mb-3">Nueva Unidad</h5>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nombre</label>
+                        <input type="text" id="promptUnNombre" class="form-control-erp" placeholder="Ej: Kilogramo">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Código (Corta)</label>
+                        <input type="text" id="promptUnCodigo" class="form-control-erp" placeholder="Ej: KG">
+                    </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn-erp-secondary" onclick="this.closest('.custom-prompt-overlay').remove()">Cancelar</button>
+                        <button class="btn-erp-primary" id="btnPromptSaveUn">Crear Unidad</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            const inputNombre = overlay.querySelector('#promptUnNombre');
+            const inputCodigo = overlay.querySelector('#promptUnCodigo');
+            setTimeout(() => inputNombre.focus(), 100);
+
+            const manejarEnter = (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); overlay.querySelector('#btnPromptSaveUn').click(); }
+                if (e.key === 'Escape') overlay.remove();
+            };
+            inputNombre.onkeydown = manejarEnter;
+            inputCodigo.onkeydown = manejarEnter;
+
+            overlay.querySelector('#btnPromptSaveUn').onclick = async () => {
+                const nombre = inputNombre.value.trim();
+                const codigo = inputCodigo.value.trim();
+                if (!nombre || !codigo) return;
+                
+                const btn = overlay.querySelector('#btnPromptSaveUn');
+                btn.disabled = true;
+                btn.innerText = 'Creando...';
+
+                try {
+                    const response = await fetch('/Inventario/CrearUnidad', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nombre: nombre, codigo: codigo, estado: true })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        const select = document.getElementById('IdUnidadBase');
+                        select.add(new Option(`${nombre} (${codigo})`, result.id));
+                        select.value = result.id;
+                        showNotification('¡Éxito!', 'Unidad creada correctamente');
+                        overlay.remove();
+                    } else {
+                        showNotification('Error', result.message || 'Error al crear', 'error');
+                        btn.disabled = false;
+                        btn.innerText = 'Crear Unidad';
+                    }
+                } catch (e) { 
+                    showNotification('Error', 'No se pudo crear', 'error'); 
+                    btn.disabled = false;
+                    btn.innerText = 'Crear Unidad';
+                }
+            };
+        }
+
+        const modalProducto = new bootstrap.Modal(document.getElementById('modalProducto'), {
+            focus: false // Evita que el modal atrape el foco y bloquee los prompts rápidos
+        });
+
+        function abrirModalNuevo() {
+            document.getElementById('formProducto').reset();
+            document.getElementById('IdProducto').value = 0;
+            document.getElementById('modalTitulo').innerText = 'Nuevo Producto';
+            document.getElementById('productErrorAlert').classList.add('d-none');
+            document.getElementById('divStockInicial').classList.remove('d-none');
+            document.getElementById('info-tab').click();
+            modalProducto.show();
+        }
+
+        function prepararEdicion(p) {
+            document.getElementById('IdProducto').value = p.idProducto;
+            document.getElementById('Codigo').value = p.codigo;
+            document.getElementById('CodigoBarras').value = p.codigoBarras || '';
+            document.getElementById('Nombre').value = p.nombre;
+            document.getElementById('IdCategoria').value = p.idCategoria;
+            document.getElementById('IdUnidadBase').value = p.idUnidadBase;
+            document.getElementById('StockMinimo').value = p.stockMinimo;
+            document.getElementById('PrecioBaseCompra').value = p.precioBaseCompra || 0;
+            document.getElementById('PrecioBaseVenta').value = p.precioBaseVenta || 0;
+            document.getElementById('Estado').checked = p.estado;
+            document.getElementById('Descripcion').value = p.descripcion || '';
+            document.getElementById('divStockInicial').classList.add('d-none');
+            
+            // Cargar Presentaciones
+            const tbody = document.querySelector('#tablaPresentaciones tbody');
+            tbody.innerHTML = '';
+            
+            if (p.presentaciones && p.presentaciones.length > 0) {
+                p.presentaciones.forEach(pres => {
+                    const unitName = pres.unidadPresentacion ? pres.unidadPresentacion.nombre : (document.querySelector(`#presUnidad option[value="${pres.idUnidadPresentacion}"]`)?.text || 'Unidad');
+                    const row = `<tr data-unit-id="${pres.idUnidadPresentacion}" data-id="${pres.idPresentacion}">
+                        <td>${pres.nombrePresentacion}</td>
+                        <td>${unitName}</td>
+                        <td>${pres.factorConversion}</td>
+                        <td>C$${parseFloat(pres.precioVenta).toFixed(2)}</td>
+                        <td><button type="button" class="btn btn-sm text-danger" onclick="this.parentElement.parentElement.remove()"><i class="bi bi-trash"></i></button></td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } else {
+                tbody.innerHTML = '<tr class="text-center"><td colspan="5" class="py-3 text-muted">No hay presentaciones adicionales</td></tr>';
+            }
+
+            document.getElementById('productErrorAlert').classList.add('d-none');
+            document.getElementById('modalTitulo').innerText = 'Editar Producto';
+            document.getElementById('info-tab').click();
+            modalProducto.show();
+        }
+
+        function cambiarVista(tipo, element) {
+            const vistaTabla = document.getElementById('vistaTabla');
+            const vistaCuadricula = document.getElementById('vistaCuadricula');
+            
+            // Toggle buttons
+            document.querySelectorAll('.view-toggle-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+
+            if (tipo === 'tabla') {
+                vistaTabla.classList.remove('d-none');
+                vistaCuadricula.classList.add('d-none');
+            } else {
+                vistaTabla.classList.add('d-none');
+                vistaCuadricula.classList.remove('d-none');
+            }
+            
+            // Persistir preferencia
+            localStorage.setItem('preferenciaVista', tipo);
+        }
+
+        // Cargar preferencia al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            const preferencia = localStorage.getItem('preferenciaVista');
+            if (preferencia === 'cuadricula') {
+                const btnCuadricula = document.querySelector('.view-toggle-btn:last-child');
+                if (btnCuadricula) btnCuadricula.click();
+            }
+        });
+
+        async function guardarProducto(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnGuardarProducto');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Guardando...';
+
+            const formData = new FormData(e.target);
+            const data = {
+                idProducto: parseInt(formData.get('IdProducto')),
+                codigo: formData.get('Codigo'),
+                codigoBarras: formData.get('CodigoBarras'),
+                nombre: formData.get('Nombre'),
+                descripcion: formData.get('Descripcion'),
+                idCategoria: parseInt(formData.get('IdCategoria')),
+                idUnidadBase: parseInt(formData.get('IdUnidadBase')),
+                stockMinimo: parseFloat(formData.get('StockMinimo')) || 0,
+                precioBaseCompra: parseFloat(formData.get('PrecioBaseCompra')) || 0,
+                precioBaseVenta: parseFloat(formData.get('PrecioBaseVenta')) || 0,
+                stockBase: parseFloat(formData.get('StockBase')) || 0,
+                estado: document.getElementById('Estado').checked,
+                presentaciones: []
+            };
+
+            // Recolectar presentaciones de la tabla
+            document.querySelectorAll('#tablaPresentaciones tbody tr').forEach(tr => {
+                if (tr.querySelector('td').classList.contains('text-muted')) return; // Saltar fila de "no hay datos"
+                
+                const cells = tr.querySelectorAll('td');
+                data.presentaciones.push({
+                    idPresentacion: parseInt(tr.getAttribute('data-id')) || 0,
+                    idProducto: data.idProducto,
+                    nombrePresentacion: cells[0].innerText,
+                    idUnidadPresentacion: parseInt(tr.getAttribute('data-unit-id')),
+                    factorConversion: parseFloat(cells[2].innerText),
+                    precioVenta: parseFloat(cells[3].innerText.replace(/[^\d.-]/g, '')),
+                    estado: true
+                });
+            });
+
+            const url = data.idProducto === 0 ? '/Inventario/CrearProducto' : '/Inventario/EditarProducto';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Completado', result.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    const errorList = document.getElementById('productErrorList');
+                    errorList.innerHTML = '';
+                    if (result.errors) {
+                        result.errors.forEach(err => {
+                            const li = document.createElement('li');
+                            li.innerText = err;
+                            errorList.appendChild(li);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.innerText = result.message || 'Error desconocido';
+                        errorList.appendChild(li);
+                    }
+                    document.getElementById('productErrorAlert').classList.remove('d-none');
+                    showNotification('Error', 'Revisar los datos del formulario', 'error');
+                }
+            } catch (error) {
+                showNotification('Error', 'Error crítico de servidor', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-save"></i> Guardar Producto';
+            }
+        }
+
+        async function eliminarProducto(id) {
+            showConfirm('¿Eliminar producto?', 'Esta acción marcará el producto como eliminado y no aparecerá en el listado.', async () => {
+                try {
+                    const response = await fetch(`/Inventario/EliminarProducto?id=${id}`, { method: 'POST' });
+                    const result = await response.json();
+                    if (result.success) {
+                        showNotification('Eliminado', 'Producto removido con éxito', 'success');
+                        setTimeout(() => location.reload(), 800);
+                    }
+                } catch (error) {
+                    showNotification('Error', 'No se pudo eliminar', 'error');
+                }
+            });
+        }
+
+        function filtrarProductos() {
+            const busqueda = document.getElementById('filtroBusqueda').value.toLowerCase();
+            const categoria = document.getElementById('filtroCategoria').value;
+            
+            // Filtrar Tabla
+            const filas = document.querySelectorAll('#tablaProductos tbody tr');
+            filas.forEach(fila => {
+                const texto = fila.innerText.toLowerCase();
+                const filaCat = fila.getAttribute('data-categoria');
+                const coincideTexto = texto.includes(busqueda);
+                const coincideCat = categoria === "" || filaCat === categoria;
+                fila.style.display = coincideTexto && coincideCat ? '' : 'none';
+            });
+
+            // Filtrar Cuadrícula
+            const tarjetas = document.querySelectorAll('#gridProductos .product-card');
+            tarjetas.forEach(tarjeta => {
+                const texto = tarjeta.innerText.toLowerCase();
+                const tarjetaCat = tarjeta.getAttribute('data-categoria');
+                const coincideTexto = texto.includes(busqueda);
+                const coincideCat = categoria === "" || tarjetaCat === categoria;
+                tarjeta.style.display = coincideTexto && coincideCat ? 'flex' : 'none';
+            });
+        }
+
+        async function crearCategoria() {
+            const nombre = document.getElementById('nuevaCategoriaNombre').value;
+            if (!nombre) return;
+            try {
+                const response = await fetch('/Inventario/CrearCategoria', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre: nombre, estado: true })
+                });
+                const result = await response.json();
+                if (result.success) location.reload();
+            } catch (error) { showNotification('Error', 'No pudo crearse', 'error'); }
+        }
+
+        async function crearUnidad() {
+            const nombre = document.getElementById('nuevaUnidadNombre').value;
+            const codigo = document.getElementById('nuevaUnidadCodigo').value;
+            if (!nombre || !codigo) return;
+
+            try {
+                const response = await fetch('/Inventario/CrearUnidad', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre: nombre, codigo: codigo, estado: true })
+                });
+                const result = await response.json();
+                if (result.success) location.reload();
+            } catch (error) { showNotification('Error', 'No pudo crearse', 'error'); }
+        }
+
+        function agregarPresentacion() {
+            const nombre = document.getElementById('presNombre').value;
+            const factor = document.getElementById('presFactor').value;
+            const precio = document.getElementById('presPrecio').value;
+            const unitSelect = document.getElementById('presUnidad');
+            const unitId = unitSelect.value;
+            const unitName = unitSelect.options[unitSelect.selectedIndex].text;
+
+            if(!nombre || !factor || !precio) {
+                showNotification('Atención', 'Por favor complete todos los campos de la presentación', 'warning');
+                return;
+            }
+
+            const tbody = document.querySelector('#tablaPresentaciones tbody');
+            if(tbody.innerText.includes('No hay presentaciones')) tbody.innerHTML = '';
+
+            const row = `<tr data-unit-id="${unitId}">
+                <td>${nombre}</td>
+                <td>${unitName}</td>
+                <td>${factor}</td>
+                <td>C$${parseFloat(precio).toFixed(2)}</td>
+                <td><button type="button" class="btn btn-sm text-danger" onclick="this.parentElement.parentElement.remove()"><i class="bi bi-trash"></i></button></td>
+            </tr>`;
+            tbody.innerHTML += row;
+
+            document.getElementById('presNombre').value = '';
+            document.getElementById('presFactor').value = '1';
+            document.getElementById('presPrecio').value = '';
+        }
+
+        const modalAjuste = new bootstrap.Modal(document.getElementById('modalAjusteStock'));
+
+        function abrirModalAjuste(id, nombre) {
+            document.getElementById('ajusteIdProducto').value = id;
+            document.getElementById('ajusteNombreProducto').value = nombre;
+            document.getElementById('ajusteCantidad').value = '';
+            document.getElementById('ajusteObservacion').value = '';
+            modalAjuste.show();
+        }
+
+        async function guardarAjuste(e) {
+            e.preventDefault();
+            const id = document.getElementById('ajusteIdProducto').value;
+            const cantidad = document.getElementById('ajusteCantidad').value;
+            const tipo = document.getElementById('ajusteTipo').value;
+            const observacion = document.getElementById('ajusteObservacion').value;
+
+            try {
+                const url = `/Inventario/AjustarStock?idProducto=${id}&cantidad=${cantidad}&tipo=${tipo}&observacion=${encodeURIComponent(observacion)}`;
+                const response = await fetch(url, { method: 'POST' });
+                const res = await response.json();
+                
+                if(res.success) {
+                    showNotification('Éxito', res.message, 'success');
+                    modalAjuste.hide();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('Error', res.message, 'error');
+                }
+            } catch(err) {
+                showNotification('Error', 'No se pudo procesar el ajuste', 'error');
+            }
+        }
+    </script>
+}

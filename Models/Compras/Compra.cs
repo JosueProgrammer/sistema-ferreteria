@@ -56,10 +56,10 @@ public class Compra
 
     // Navegación
     [ForeignKey("IdProveedor")]
-    public virtual Proveedor Proveedor { get; set; } = null!;
+    public virtual Proveedor? Proveedor { get; set; }
 
     [ForeignKey("IdUsuario")]
-    public virtual Usuario Usuario { get; set; } = null!;
+    public virtual Usuario? Usuario { get; set; }
 
     [ForeignKey("UsuarioAnulacion")]
     public virtual Usuario? UsuarioAnulacionNavigation { get; set; }

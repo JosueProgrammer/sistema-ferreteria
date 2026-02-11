@@ -1,0 +1,259 @@
+@model IEnumerable<Sistema_Ferreteria.Models.Clientes.Cliente>
+@{
+    ViewData["Title"] = "Gestión de Clientes";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div class="page-header mb-0">
+        <h1>Directorio de Clientes</h1>
+        <p class="subtitle">Administra tu cartera de clientes, límites de crédito y saldos</p>
+    </div>
+    <button type="button" class="btn-erp-primary" onclick="abrirModalNuevo()">
+        <i class="bi bi-person-plus"></i>
+        Nuevo Cliente
+    </button>
+</div>
+
+<!-- Resumen Rápido -->
+<div class="summary-cards">
+    <div class="summary-card border-erp-blue">
+        <div class="summary-icon blue"><i class="bi bi-people"></i></div>
+        <div class="summary-title">Total Clientes</div>
+        <div class="summary-value">@Model.Count()</div>
+        <div class="summary-indicator muted">Registrados en el sistema</div>
+    </div>
+    <div class="summary-card border-erp-green">
+        <div class="summary-icon green"><i class="bi bi-check2-circle"></i></div>
+        <div class="summary-title">Clientes Activos</div>
+        <div class="summary-value">@Model.Count(c => c.Estado)</div>
+        <div class="summary-indicator positive">Habilitados para ventas</div>
+    </div>
+    <div class="summary-card border-erp-orange">
+        <div class="summary-icon orange"><i class="bi bi-wallet2"></i></div>
+        <div class="summary-title">Total en Deuda</div>
+        <div class="summary-value">C$ @Model.Sum(c => c.SaldoActual).ToString("N2")</div>
+        <div class="summary-indicator danger">Cuentas por cobrar</div>
+    </div>
+    <div class="summary-card border-erp-purple">
+        <div class="summary-icon purple"><i class="bi bi-shield-check"></i></div>
+        <div class="summary-title">Crédito Oorgado</div>
+        <div class="summary-value">C$ @Model.Sum(c => c.LimiteCredito).ToString("N2")</div>
+        <div class="summary-indicator muted">Límite global</div>
+    </div>
+</div>
+
+<div class="card-erp">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Listado General</span>
+        <div class="search-wrap" style="width: 300px;">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" id="tablaSearch" class="form-control-erp" placeholder="Buscar por nombre o documento..." onkeyup="filterTable()">
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-erp mb-0" id="clientesTable">
+                <thead>
+                    <tr>
+                        <th>Cliente / Documento</th>
+                        <th>Contacto</th>
+                        <th>Estado</th>
+                        <th class="text-end">Límite Crédito</th>
+                        <th class="text-end">Saldo Actual</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-bold">@c.Nombre</div>
+                                <div class="x-small text-muted">@c.TipoDocumento: @c.NumeroDocumento</div>
+                            </td>
+                            <td>
+                                @if(!string.IsNullOrEmpty(c.Telefono)){ <div class="small"><i class="bi bi-telephone text-muted me-1"></i> @c.Telefono</div> }
+                                @if(!string.IsNullOrEmpty(c.Direccion)){ <div class="x-small text-muted text-truncate" style="max-width: 200px;">@c.Direccion</div> }
+                            </td>
+                            <td>
+                                @if (c.Estado) { <span class="badge-erp success">Activo</span> }
+                                else { <span class="badge-erp secondary">Inactivo</span> }
+                            </td>
+                            <td class="text-end fw-bold">C$ @c.LimiteCredito.ToString("N2")</td>
+                            <td class="text-end fw-bold @(c.SaldoActual > 0 ? "text-danger" : "text-success")">
+                                C$ @c.SaldoActual.ToString("N2")
+                            </td>
+                            <td class="text-center">
+                                <div class="action-icons">
+                                    <button onclick="abrirModalEditar(@c.IdCliente)" title="Editar"><i class="bi bi-pencil"></i></button>
+                                    <button onclick="confirmarEliminar(@c.IdCliente, '@c.Nombre')" title="Eliminar" class="text-danger"><i class="bi bi-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cliente -->
+<div class="modal fade modal-erp" id="modalCliente" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Nuevo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCliente">
+                    <input type="hidden" id="cliId">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-bold">Nombre Completo *</label>
+                            <input type="text" id="cliNombre" class="form-control-erp" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Estado</label>
+                            <select id="cliEstado" class="form-select">
+                                <option value="true">Activo</option>
+                                <option value="false">Inactivo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Tipo Documento</label>
+                            <select id="cliTipoDoc" class="form-select">
+                                <option value="DNI">Cédula / DNI</option>
+                                <option value="RUC">RUC</option>
+                                <option value="PASAPORTE">Pasaporte</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">N° Documento</label>
+                            <input type="text" id="cliNumDoc" class="form-control-erp" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Teléfono</label>
+                            <input type="text" id="cliTel" class="form-control-erp">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Dirección</label>
+                            <input type="text" id="cliDir" class="form-control-erp">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Límite de Crédito (C$)</label>
+                            <input type="number" id="cliLimite" class="form-control-erp" value="0" min="0" step="0.01">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Descuento (%)</label>
+                            <input type="number" id="cliDesc" class="form-control-erp" value="0" min="0" max="100" step="1">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Observaciones</label>
+                            <textarea id="cliObs" rows="2" class="form-control-erp"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary px-4" id="btnGuardar">Guardar Cliente</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const modal = new bootstrap.Modal(document.getElementById('modalCliente'));
+
+        function filterTable() {
+            const input = document.getElementById('tablaSearch');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('clientesTable');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const text = tr[i].innerText.toLowerCase();
+                tr[i].style.display = text.includes(filter) ? '' : 'none';
+            }
+        }
+
+        function abrirModalNuevo() {
+            document.getElementById('formCliente').reset();
+            document.getElementById('cliId').value = '';
+            document.getElementById('modalTitle').innerText = 'Nuevo Cliente';
+            modal.show();
+        }
+
+        async function abrirModalEditar(id) {
+            const response = await fetch(`/Clientes/ObtenerDetalle/${id}`);
+            const data = await response.json();
+            
+            document.getElementById('cliId').value = data.idCliente;
+            document.getElementById('cliNombre').value = data.nombre;
+            document.getElementById('cliTipoDoc').value = data.tipoDocumento;
+            document.getElementById('cliNumDoc').value = data.numeroDocumento;
+            document.getElementById('cliTel').value = data.telefono || '';
+            document.getElementById('cliDir').value = data.direccion || '';
+            document.getElementById('cliLimite').value = data.limiteCredito;
+            document.getElementById('cliDesc').value = data.descuentoPorcentaje;
+            document.getElementById('cliObs').value = data.observaciones || '';
+            document.getElementById('cliEstado').value = data.estado.toString();
+            
+            document.getElementById('modalTitle').innerText = 'Editar Cliente';
+            modal.show();
+        }
+
+        $('#btnGuardar').click(async function() {
+            const id = $('#cliId').val();
+            const data = {
+                idCliente: id ? parseInt(id) : 0,
+                nombre: $('#cliNombre').val(),
+                tipoDocumento: $('#cliTipoDoc').val(),
+                numeroDocumento: $('#cliNumDoc').val(),
+                telefono: $('#cliTel').val(),
+                direccion: $('#cliDir').val(),
+                limiteCredito: parseFloat($('#cliLimite').val()) || 0,
+                descuentoPorcentaje: parseFloat($('#cliDesc').val()) || 0,
+                observaciones: $('#cliObs').val(),
+                estado: $('#cliEstado').val() === 'true'
+            };
+
+            if (!data.nombre || !data.numeroDocumento) {
+                showNotification('Error', 'Nombre y Documento son obligatorios.', 'error');
+                return;
+            }
+
+            const url = id ? '/Clientes/Editar' : '/Clientes/Crear';
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (result.success) {
+                showNotification('Éxito', result.message, 'success');
+                modal.hide();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification('Error', result.message, 'error');
+            }
+        });
+
+        function confirmarEliminar(id, nombre) {
+            showConfirm('Eliminar Cliente', `¿Está seguro de eliminar a "${nombre}"? Esta acción no se puede deshacer.`, async () => {
+                const res = await fetch(`/Clientes/Eliminar/${id}`, { method: 'POST' });
+                const result = await res.json();
+                if (result.success) {
+                    showNotification('Eliminado', result.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                }
+            });
+        }
+    </script>
+}
