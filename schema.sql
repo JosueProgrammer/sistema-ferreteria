@@ -628,7 +628,9 @@ INSERT INTO Configuracion (Clave, Valor, Tipo, Modulo, Descripcion) VALUES
 ('MONEDA', 'PEN', 'Texto', 'General', 'Código de moneda'),
 ('MONEDA_SIMBOLO', 'S/', 'Texto', 'General', 'Símbolo de moneda'),
 ('FACTURA_SERIE', 'F001', 'Texto', 'Ventas', 'Serie de facturación'),
-('ALERTA_STOCK_MINIMO', 'true', 'Booleano', 'Inventario', 'Activar alertas de stock mínimo');
+('ALERTA_STOCK_MINIMO', 'true', 'Booleano', 'Inventario', 'Activar alertas de stock mínimo'),
+('LOGO_URL', '', 'Imagen', 'Personalizacion', 'URL o base64 del logo del negocio'),
+('TEMA_COLOR', '#007bff', 'Color', 'Personalizacion', 'Color principal del tema');
 
 -- ============================================
 -- COMENTARIOS EN TABLAS (Documentación)

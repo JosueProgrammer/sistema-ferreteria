@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sistema_Ferreteria.Models.Configuracion;
 using Sistema_Ferreteria.Models.Seguridad;
 
 namespace Sistema_Ferreteria.Data;
@@ -74,8 +75,23 @@ public static class DbInitializer
             if (adminRole != null)
             {
                 context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = adminUser.IdUsuario, IdRol = adminRole.IdRol });
-                await context.SaveChangesAsync();
-            }
+            await context.SaveChangesAsync();
+        }
+
+        // 4. Configuración inicial (para prueba: General 1 ítem, Personalizacion 2 ítems)
+        if (!context.Configuraciones.Any())
+        {
+            var configs = new List<Configuracion>
+            {
+                new() { Clave = "EMPRESA_NOMBRE", Valor = "Mi Ferretería", Tipo = "Texto", Modulo = "General", Descripcion = "Nombre de la empresa" },
+                new() { Clave = "LOGO_URL", Valor = "", Tipo = "Imagen", Modulo = "Personalizacion", Descripcion = "URL o base64 del logo" },
+                new() { Clave = "TEMA_COLOR", Valor = "#007bff", Tipo = "Color", Modulo = "Personalizacion", Descripcion = "Color principal del tema" },
+                new() { Clave = "IMPUESTO_PORCENTAJE", Valor = "18", Tipo = "Numero", Modulo = "Ventas", Descripcion = "Porcentaje de impuesto" },
+                new() { Clave = "ALERTA_STOCK_MINIMO", Valor = "true", Tipo = "Booleano", Modulo = "Inventario", Descripcion = "Activar alertas de stock" }
+            };
+            context.Configuraciones.AddRange(configs);
+            await context.SaveChangesAsync();
         }
     }
+}
 }
