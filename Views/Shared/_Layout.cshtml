@@ -75,6 +75,15 @@
                         <span>Usuarios</span>
                     </a>
                 </li>
+                @if (User.IsInRole("Administrador"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")">
+                        <a asp-controller="Tenants" asp-action="Index">
+                            <i class="bi bi-buildings"></i>
+                            <span>Empresas</span>
+                        </a>
+                    </li>
+                }
                 <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Licencia" ? "active" : "")">
                     <a asp-controller="Licencia" asp-action="Index">
                         <i class="bi bi-lock"></i>

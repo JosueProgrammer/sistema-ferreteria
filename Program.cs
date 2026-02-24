@@ -4,6 +4,9 @@ using Sistema_Ferreteria.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<Sistema_Ferreteria.Services.ITenantService, Sistema_Ferreteria.Services.TenantService>();
+
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options => {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -51,8 +54,45 @@ using (var scope = app.Services.CreateScope())
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+
+// Seed Multi-Tenancy
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try 
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        if (!context.Tenants.Any(t => t.IdTenant == "Default"))
+        {
+            context.Tenants.Add(new Sistema_Ferreteria.Models.Seguridad.Tenant
+            {
+                IdTenant = "Default",
+                Nombre = "Ferretería Principal",
+                Activo = true,
+                FechaCreacion = DateTime.UtcNow
+            });
+            context.SaveChanges();
+            
+            // Assign existing data to Default tenant if they are empty
+            context.Database.ExecuteSqlRaw("UPDATE \"Usuarios\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Roles\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Permisos\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Productos\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Categorias\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Ventas\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Clientes\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Proveedores\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Compras\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+            context.Database.ExecuteSqlRaw("UPDATE \"Configuracion\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database.");
+    }
 }
 
 app.UseHttpsRedirection();

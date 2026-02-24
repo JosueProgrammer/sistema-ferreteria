@@ -1,0 +1,49 @@
+@model Sistema_Ferreteria.Models.Seguridad.Tenant
+@{
+    ViewData["Title"] = "Eliminar Empresa";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="page-header mb-4 text-center">
+            <h1 class="text-danger"><i class="bi bi-exclamation-triangle"></i></h1>
+            <h2>¿Eliminar Empresa?</h2>
+            <p class="subtitle text-danger fw-bold">Esta acción es irreversible y afectará a todos los datos asociados.</p>
+        </div>
+
+        <div class="card-erp border-danger shadow-lg">
+            <div class="card-body p-4">
+                <div class="alert alert-warning border-0">
+                    <strong>Atención:</strong> Al eliminar la empresa <strong>@Model.Nombre</strong> (@Model.IdTenant), se perderá el acceso a todos los productos, ventas y configuraciones asociadas a este tenant. Se recomienda simplemente <strong>desactivar</strong> el tenant desde el modo edición si solo desea suspender el servicio.
+                </div>
+
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">ID Tenant:</dt>
+                        <dd class="col-sm-8"><code>@Model.IdTenant</code></dd>
+
+                        <dt class="col-sm-4">Nombre:</dt>
+                        <dd class="col-sm-8">@Model.Nombre</dd>
+
+                        <dt class="col-sm-4">ID Fiscal:</dt>
+                        <dd class="col-sm-8">@(Model.IdentificadorFiscal ?? "N/A")</dd>
+
+                        <dt class="col-sm-4">Creado el:</dt>
+                        <dd class="col-sm-8">@Model.FechaCreacion.ToString("f")</dd>
+                    </dl>
+                </div>
+
+                <form asp-action="Delete">
+                    <input type="hidden" asp-for="IdTenant" />
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger p-3 fw-bold">
+                            <i class="bi bi-trash me-2"></i> Confirmar Eliminación Permanente
+                        </button>
+                        <a asp-action="Index" class="btn btn-erp-secondary">Cancelar y volver</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

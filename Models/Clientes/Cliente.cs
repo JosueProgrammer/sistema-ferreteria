@@ -1,11 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Sistema_Ferreteria.Models.Common;
 
 namespace Sistema_Ferreteria.Models.Clientes;
 
 [Table("Clientes")]
-public class Cliente
+public class Cliente : ITenantEntity
 {
+    [Required]
+    [MaxLength(50)]
+    public string TenantId { get; set; } = string.Empty;
+
     [Key]
     [Column("IdCliente")]
     public int IdCliente { get; set; }

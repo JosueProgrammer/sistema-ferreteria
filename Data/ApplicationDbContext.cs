@@ -6,17 +6,24 @@ using Sistema_Ferreteria.Models.Proveedores;
 using Sistema_Ferreteria.Models.Ventas;
 using Sistema_Ferreteria.Models.Compras;
 using Sistema_Ferreteria.Models.Configuracion;
+using Sistema_Ferreteria.Models.Common;
+using Sistema_Ferreteria.Services;
 
 namespace Sistema_Ferreteria.Data;
 
 public class ApplicationDbContext : DbContext
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    private readonly ITenantService _tenantService;
+    public string TenantId => _tenantService.GetTenantId() ?? "Default";
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ITenantService tenantService)
         : base(options)
     {
+        _tenantService = tenantService;
     }
 
     // Seguridad
+    public DbSet<Tenant> Tenants { get; set; }
     public DbSet<Usuario> Usuarios { get; set; }
     public DbSet<Rol> Roles { get; set; }
     public DbSet<Permiso> Permisos { get; set; }
@@ -54,10 +61,23 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Configuraciones de nombres de tablas y columnas
-        // (Entity Framework Core respetará los atributos [Table] y [Column] de los modelos)
+        // Global Query Filters for Multi-Tenancy
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(ITenantEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                var parameter = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
+                var body = System.Linq.Expressions.Expression.Equal(
+                    System.Linq.Expressions.Expression.Property(parameter, nameof(ITenantEntity.TenantId)),
+                    System.Linq.Expressions.Expression.Property(System.Linq.Expressions.Expression.Constant(this), nameof(TenantId))
+                );
+                var lambda = System.Linq.Expressions.Expression.Lambda(body, parameter);
+                
+                modelBuilder.Entity(entityType.ClrType).HasQueryFilter(lambda);
+            }
+        }
 
-        // Índices únicos
+        // Configuraciones de nombres de tablas y columnas...
         modelBuilder.Entity<Usuario>()
             .HasIndex(u => u.NombreUsuario)
             .IsUnique();
@@ -78,7 +98,7 @@ public class ApplicationDbContext : DbContext
             .HasIndex(p => new { p.IdProducto, p.NombrePresentacion })
             .IsUnique();
 
-        // Configuración de relaciones
+        // Relaciones...
         modelBuilder.Entity<RolPermiso>()
             .HasIndex(rp => new { rp.IdRol, rp.IdPermiso })
             .IsUnique();
@@ -86,6 +106,34 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<UsuarioRol>()
             .HasIndex(ur => new { ur.IdUsuario, ur.IdRol })
             .IsUnique();
+    }
+
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        OnBeforeSaving();
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        OnBeforeSaving();
+        return base.SaveChanges();
+    }
+
+    private void OnBeforeSaving()
+    {
+        var entries = ChangeTracker.Entries<ITenantEntity>();
+        foreach (var entry in entries)
+        {
+            if (entry.State == EntityState.Added)
+            {
+                if (string.IsNullOrEmpty(entry.Entity.TenantId))
+                {
+                    entry.Entity.TenantId = TenantId; // Assign resolved tenant
+                }
+            }
+        }
     }
 }
 

@@ -1,11 +1,16 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Sistema_Ferreteria.Models.Common;
 
 namespace Sistema_Ferreteria.Models.Proveedores;
 
 [Table("Proveedores")]
-public class Proveedor
+public class Proveedor : ITenantEntity
 {
+    [Required]
+    [MaxLength(50)]
+    public string TenantId { get; set; } = string.Empty;
+
     [Key]
     [Column("IdProveedor")]
     public int IdProveedor { get; set; }

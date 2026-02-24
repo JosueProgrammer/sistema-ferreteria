@@ -1,12 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Sistema_Ferreteria.Models.Common;
 
 namespace Sistema_Ferreteria.Models.Inventario;
 
 [Table("Categorias")]
-public class Categoria
+public class Categoria : ITenantEntity
 {
+    [Required]
+    [MaxLength(50)]
+    public string TenantId { get; set; } = string.Empty;
+
     [Key]
     [Column("IdCategoria")]
     public int IdCategoria { get; set; }
