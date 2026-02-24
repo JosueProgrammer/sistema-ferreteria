@@ -1,159 +1,180 @@
+@model Sistema_Ferreteria.Models.ViewModels.DashboardReporteVM
 @{
-    ViewData["Title"] = "Reportes y Análisis";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Dashboard de Reportes";
 }
 
-<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-    <div class="page-header mb-0">
-        <h1>Reportes y Análisis</h1>
-        <p class="subtitle">Desempeño del negocio e información</p>
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2 class="h3 mb-0 text-gray-800">Panel de Reportes</h2>
+            <div>
+                <a asp-action="Ventas" class="btn btn-primary btn-sm"><i class="bi bi-file-earmark-text"></i> Reporte Ventas</a>
+                <a asp-action="InventarioBajo" class="btn btn-warning btn-sm"><i class="bi bi-exclamation-triangle"></i> Inventario Bajo</a>
+            </div>
+        </div>
     </div>
-    <button type="button" class="btn-erp-primary">
-        <i class="bi bi-download"></i>
-        Exportar Reporte
-    </button>
+
+    <!-- Resumen Cards -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 py-2 border-start border-primary border-4 rounded-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Ventas Hoy</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">C$ @Model.TotalVentasHoy.ToString("N2")</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-check fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 py-2 border-start border-success border-4 rounded-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Ganancia (Mes)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">C$ @Model.GananciaEstimadaMes.ToString("N2")</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-currency-dollar fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 py-2 border-start border-info border-4 rounded-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Cant. Ventas Hoy</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.CantidadVentasHoy</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-receipt fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100 py-2 border-start border-danger border-4 rounded-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Stock Bajo</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.ProductosBajoStock</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-boxes fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Area Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow-sm mb-4 border-0 rounded-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white border-0">
+                    <h6 class="m-0 font-weight-bold text-primary">Ventas Últimos 7 Días</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area" style="height: 300px;">
+                        <canvas id="ventasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pie Chart -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow-sm mb-4 border-0 rounded-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white border-0">
+                    <h6 class="m-0 font-weight-bold text-primary">Top 10 Productos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover border-0">
+                            <thead class="small text-muted">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-end">Ventas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.ProductosMasVendidos)
+                                {
+                                    <tr>
+                                        <td class="small">@item.Nombre</td>
+                                        <td class="text-end font-weight-bold">@item.Cantidad.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Filtros -->
-<div class="card-erp mb-4">
-    <div class="card-header">Filtros de Reporte</div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label form-erp">Tipo de Reporte</label>
-                <select class="form-control-erp">
-                    <option>Reporte de Ventas</option>
-                    <option>Reporte de Inventario</option>
-                    <option>Reporte de Compras</option>
-                </select>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label form-erp">Rango de Fechas</label>
-                <select class="form-control-erp">
-                    <option>Mes Pasado</option>
-                    <option>Últimos 3 meses</option>
-                    <option>Este año</option>
-                </select>
-            </div>
-        </div>
-    </div>
-</div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('ventasChart');
+        const etiquetas = @Html.Raw(Json.Serialize(Model.VentasUltimosDias.Select(v => v.Fecha)));
+        const datos = @Html.Raw(Json.Serialize(Model.VentasUltimosDias.Select(v => v.Total)));
 
-<div class="row g-4">
-    <!-- Ventas por Categoría -->
-    <div class="col-lg-6">
-        <div class="card-erp">
-            <div class="card-header">Ventas por Categoría</div>
-            <div class="card-body">
-                <p class="card-subtitle">Ingresos y cantidad de transacciones por categoría de producto</p>
-                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
-                    <div class="text-center text-muted">
-                        <i class="bi bi-bar-chart" style="font-size: 2.5rem;"></i>
-                        <p class="mb-0 mt-2 small">Gráfico de barras (sales / revenue)</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Ganancias vs Gastos -->
-    <div class="col-lg-6">
-        <div class="card-erp">
-            <div class="card-header">Ganancias vs Gastos</div>
-            <div class="card-body">
-                <p class="card-subtitle">Desempeño financiero mensual</p>
-                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
-                    <div class="text-center text-muted">
-                        <i class="bi bi-bar-chart" style="font-size: 2.5rem;"></i>
-                        <p class="mb-0 mt-2 small">Gráfico profit / expenses</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Tendencia del Estado del Inventario -->
-    <div class="col-lg-6">
-        <div class="card-erp">
-            <div class="card-header">Tendencia del Estado del Inventario</div>
-            <div class="card-body">
-                <p class="card-subtitle">Cambios en los niveles de stock a lo largo del tiempo</p>
-                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
-                    <div class="text-center text-muted">
-                        <i class="bi bi-graph-up" style="font-size: 2.5rem;"></i>
-                        <p class="mb-0 mt-2 small">inStock, lowStock, critical</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Distribución de Ventas -->
-    <div class="col-lg-6">
-        <div class="card-erp">
-            <div class="card-header">Distribución de Ventas</div>
-            <div class="card-body">
-                <p class="card-subtitle">Cuota de mercado por categoría</p>
-                <div class="chart-placeholder d-flex align-items-center justify-content-center" style="height: 260px; background: #f8f9fa; border-radius: 8px;">
-                    <div class="text-center text-muted">
-                        <i class="bi bi-pie-chart" style="font-size: 2.5rem;"></i>
-                        <p class="mb-0 mt-2 small">Gráfico de torta</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Resumen Mensual -->
-<div class="card-erp mt-4">
-    <div class="card-header">Resumen Mensual</div>
-    <div class="card-body">
-        <p class="card-subtitle">Métricas clave y totales</p>
-        <div class="table-responsive">
-            <table class="table-erp">
-                <thead>
-                    <tr>
-                        <th>Mes</th>
-                        <th>Ventas Totales</th>
-                        <th>Ingresos</th>
-                        <th>Gastos</th>
-                        <th>Ganancias</th>
-                        <th>Margen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Enero</td>
-                        <td>234</td>
-                        <td>$14,200</td>
-                        <td>$4,200</td>
-                        <td>$8,900</td>
-                        <td>62.5%</td>
-                    </tr>
-                    <tr>
-                        <td>Febrero</td>
-                        <td>267</td>
-                        <td>$15,100</td>
-                        <td>$4,100</td>
-                        <td>$9,200</td>
-                        <td>60.9%</td>
-                    </tr>
-                    <tr>
-                        <td>Marzo</td>
-                        <td>312</td>
-                        <td>$16,800</td>
-                        <td>$4,300</td>
-                        <td>$10,100</td>
-                        <td>60.1%</td>
-                    </tr>
-                    <tr>
-                        <td>Abril</td>
-                        <td>289</td>
-                        <td>$15,700</td>
-                        <td>$4,000</td>
-                        <td>$9,800</td>
-                        <td>62.4%</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: etiquetas,
+                datasets: [{
+                    label: 'Ventas (C$)',
+                    data: datos,
+                    fill: true,
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: 'rgb(54, 162, 235)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: true,
+                            drawBorder: false,
+                            color: 'rgba(0,0,0,0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
