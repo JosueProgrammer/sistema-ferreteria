@@ -2,12 +2,17 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Sistema_Ferreteria.Models.Seguridad;
 using Sistema_Ferreteria.Models.Clientes;
+using Sistema_Ferreteria.Models.Common;
 
 namespace Sistema_Ferreteria.Models.Ventas;
 
 [Table("Ventas")]
-public class Venta
+public class Venta : ITenantEntity
 {
+    [Required]
+    [MaxLength(50)]
+    public string TenantId { get; set; } = string.Empty;
+
     [Key]
     [Column("IdVenta")]
     public long IdVenta { get; set; }

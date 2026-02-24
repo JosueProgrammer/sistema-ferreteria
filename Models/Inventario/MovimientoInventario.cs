@@ -1,12 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Sistema_Ferreteria.Models.Seguridad;
+using Sistema_Ferreteria.Models.Common;
 
 namespace Sistema_Ferreteria.Models.Inventario;
 
 [Table("MovimientosInventario")]
-public class MovimientoInventario
+public class MovimientoInventario : ITenantEntity
 {
+    [Required]
+    [MaxLength(50)]
+    public string TenantId { get; set; } = string.Empty;
+
     [Key]
     [Column("IdMovimiento")]
     public long IdMovimiento { get; set; }

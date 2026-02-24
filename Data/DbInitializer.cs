@@ -9,7 +9,7 @@ public static class DbInitializer
     public static async Task Seed(ApplicationDbContext context)
     {
         // 1. Permisos Base
-        if (!context.Permisos.Any())
+        if (!await context.Permisos.IgnoreQueryFilters().AnyAsync())
         {
             var permisos = new List<Permiso>
             {
@@ -29,7 +29,7 @@ public static class DbInitializer
         }
 
         // 2. Roles Base
-        if (!context.Roles.Any())
+        if (!await context.Roles.IgnoreQueryFilters().AnyAsync())
         {
             var adminRole = new Rol { Nombre = "Administrador", Descripcion = "Acceso total al sistema", Estado = true };
             var vendedorRole = new Rol { Nombre = "Vendedor", Descripcion = "Ventas y consulta de stock", Estado = true };
@@ -57,7 +57,7 @@ public static class DbInitializer
         }
 
         // 3. Usuario Admin Inicial
-        if (!context.Usuarios.Any())
+        if (!await context.Usuarios.IgnoreQueryFilters().AnyAsync())
         {
             var adminUser = new Usuario
             {

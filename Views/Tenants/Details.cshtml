@@ -1,0 +1,104 @@
+@model Sistema_Ferreteria.Models.Seguridad.Tenant
+@{
+    ViewData["Title"] = "Detalles de la Empresa";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a asp-action="Index" class="text-decoration-none small mb-2 d-inline-block">
+            <i class="bi bi-arrow-left"></i> Volver al listado
+        </a>
+        <h1>@Model.Nombre</h1>
+        <p class="subtitle">Información detallada y configuración del tenant</p>
+    </div>
+    <div class="btn-group">
+        <a asp-action="Edit" asp-route-id="@Model.IdTenant" class="btn btn-primary">
+            <i class="bi bi-pencil me-1"></i> Editar Datos
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- INFO CARD -->
+    <div class="col-lg-4">
+        <div class="card-erp shadow-sm h-100">
+            <div class="card-body p-4 text-center">
+                <div class="tenant-logo-large mx-auto mb-4 bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 120px; height: 120px;">
+                    @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                    {
+                        <img src="@Model.LogoUrl" alt="Logo" class="img-fluid rounded-circle" style="max-height: 100px;">
+                    }
+                    else
+                    {
+                        <i class="bi bi-building text-primary display-4"></i>
+                    }
+                </div>
+                <h4 class="fw-bold mb-1">@Model.Nombre</h4>
+                <p class="text-muted small">@Model.IdTenant</p>
+                
+                <div class="d-flex justify-content-center mb-4">
+                    <span class="badge-erp @(Model.Activo ? "success" : "danger") px-4">
+                        @(Model.Activo ? "ACTIVO" : "SUSPENDIDO")
+                    </span>
+                </div>
+
+                <hr class="my-4 opacity-25">
+
+                <div class="text-start">
+                    <label class="small fw-bold text-muted text-uppercase d-block mb-1">Detalles de Contacto</label>
+                    <p class="small mb-2"><i class="bi bi-geo-alt me-2"></i> @(Model.Direccion ?? "Sin dirección registrada")</p>
+                    <p class="small mb-0"><i class="bi bi-hash me-2"></i> @(Model.IdentificadorFiscal ?? "N/A")</p>
+                    <p class="small mt-2"><i class="bi bi-calendar-event me-2"></i> Registrado el @Model.FechaCreacion.ToString("f")</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- METRICS CARD (Simulated) -->
+    <div class="col-lg-8">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card-erp shadow-sm bg-primary text-white border-0 p-4 h-100">
+                    <h6 class="small fw-bold text-uppercase opacity-75">Usuarios Activos</h6>
+                    <div class="d-flex align-items-end justify-content-between">
+                        <h2 class="fw-bold mb-0">--</h2>
+                        <i class="bi bi-people display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-erp shadow-sm p-4 h-100">
+                    <h6 class="small fw-bold text-uppercase text-muted">Aislamiento de Datos</h6>
+                    <p class="small text-muted mb-0 mt-2">
+                        <i class="bi bi-shield-check text-success me-2"></i> El esquema de datos está blindado bajo la columna <code>TenantId</code>. Ninguna otra empresa puede acceder a los registros de <strong>@Model.Nombre</strong>.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="card-erp shadow-sm p-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-info-circle me-2"></i> Estado de Configuración</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless mb-0">
+                            <tbody>
+                                <tr>
+                                    <td><i class="bi bi-check-circle-fill text-success me-2"></i> Infraestructura Multitenant</td>
+                                    <td class="text-end fw-bold">CONFIGURADO</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-check-circle-fill text-success me-2"></i> Aislamiento de Base de Datos</td>
+                                    <td class="text-end fw-bold">ACTIVO</td>
+                                </tr>
+                                <tr>
+                                    <td><i class="bi bi-dash-circle text-muted me-2"></i> Personalización de Interfaz (CSS)</td>
+                                    <td class="text-end text-muted">PENDIENTE</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

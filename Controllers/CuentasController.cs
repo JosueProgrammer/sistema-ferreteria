@@ -33,6 +33,7 @@ public class CuentasController : Controller
         if (!ModelState.IsValid) return View(model);
 
         var usuario = await _context.Usuarios
+            .IgnoreQueryFilters() // Must ignore filters to find user across tenants if needed
             .Include(u => u.UsuarioRoles)
                 .ThenInclude(ur => ur.Rol)
             .FirstOrDefaultAsync(u => u.NombreUsuario == model.Usuario && !u.Eliminado && u.Estado);
@@ -43,8 +44,7 @@ public class CuentasController : Controller
             return View(model);
         }
 
-        // TODO: En producción usar hashing real. Por ahora comparamos directamente para demo si no hay hash.
-        // O asumimos que la clave es igual al hash si no hemos implementado el registro todavía.
+        // TODO: En producción usar hashing real.
         if (usuario.ContraseñaHash != model.Password) 
         {
              ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
@@ -55,7 +55,8 @@ public class CuentasController : Controller
         {
             new Claim(ClaimTypes.Name, usuario.NombreUsuario),
             new Claim("NombreCompleto", usuario.Nombre),
-            new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString())
+            new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
+            new Claim("TenantId", usuario.TenantId) // Critical for multi-tenancy
         };
 
         foreach (var rol in usuario.UsuarioRoles)

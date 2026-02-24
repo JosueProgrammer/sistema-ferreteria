@@ -1,0 +1,76 @@
+@model Sistema_Ferreteria.Models.Seguridad.Tenant
+@{
+    ViewData["Title"] = "Editar Empresa";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="page-header mb-4">
+            <a asp-action="Index" class="text-decoration-none small mb-2 d-inline-block">
+                <i class="bi bi-arrow-left"></i> Volver al listado
+            </a>
+            <h1>Editar Empresa</h1>
+            <p class="subtitle">Actualice la configuración de @Model.Nombre</p>
+        </div>
+
+        <div class="card-erp shadow-lg">
+            <div class="card-body p-4">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="IdTenant" />
+                    <input type="hidden" asp-for="FechaCreacion" />
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">ID del Tenant</label>
+                        <input class="form-control-erp bg-light" value="@Model.IdTenant" disabled />
+                        <div class="form-text">El ID no puede ser modificado después de la creación.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Nombre" class="form-label fw-bold">Nombre de la Empresa</label>
+                        <input asp-for="Nombre" class="form-control-erp" required />
+                        <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="IdentificadorFiscal" class="form-label fw-bold">ID Fiscal (RUC/NIT)</label>
+                            <input asp-for="IdentificadorFiscal" class="form-control-erp" />
+                            <span asp-validation-for="IdentificadorFiscal" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" asp-for="Activo">
+                                <label class="form-check-label" asp-for="Activo">Tenant Activo</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Direccion" class="form-label fw-bold">Dirección</label>
+                        <textarea asp-for="Direccion" class="form-control-erp" rows="2"></textarea>
+                        <span asp-validation-for="Direccion" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="LogoUrl" class="form-label fw-bold">URL del Logo (Opcional)</label>
+                        <input asp-for="LogoUrl" class="form-control-erp" />
+                        <span asp-validation-for="LogoUrl" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary p-3 fw-bold">
+                            <i class="bi bi-save me-2"></i> Guardar Cambios
+                        </button>
+                        <a asp-action="Index" class="btn btn-erp-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

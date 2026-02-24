@@ -1,12 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Sistema_Ferreteria.Models.Inventario;
+using Sistema_Ferreteria.Models.Common;
 
 namespace Sistema_Ferreteria.Models.Compras;
 
 [Table("DetalleCompra")]
-public class DetalleCompra
+public class DetalleCompra : ITenantEntity
 {
+    [Required]
+    [MaxLength(50)]
+    public string TenantId { get; set; } = string.Empty;
+
     [Key]
     [Column("IdDetalleCompra")]
     public long IdDetalleCompra { get; set; }

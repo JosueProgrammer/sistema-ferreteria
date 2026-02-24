@@ -3,12 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using Sistema_Ferreteria.Models.Seguridad;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Sistema_Ferreteria.Models.Common;
 
 namespace Sistema_Ferreteria.Models.Inventario;
 
 [Table("Productos")]
-public class Producto
+public class Producto : ITenantEntity
 {
+    [Required]
+    [MaxLength(50)]
+    public string TenantId { get; set; } = string.Empty;
+
     [Key]
     [Column("IdProducto")]
     public int IdProducto { get; set; }
