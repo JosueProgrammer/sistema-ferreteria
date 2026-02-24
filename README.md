@@ -91,9 +91,6 @@ dotnet ef migrations add NombreMigracion
 dotnet ef database update
 ```
 
-## 🔐 Seguridad
-
-⚠️ **IMPORTANTE**: Nunca subas archivos `appsettings.json` con credenciales reales a GitHub. Usa variables de entorno o Azure Key Vault en producción.
 
 ## 📝 Licencia
 
@@ -101,9 +98,10 @@ Este proyecto es privado y confidencial.
 
 ## 👥 Contribuidores
 
-- [Tu Nombre]
-
+- Josue Bermudez
+- Rolando Loasiga
+- Norlan Umaña
 ## 📞 Contacto
 
-Para más información, contacta a [tu-email@ejemplo.com]
+Para más información, contacta a bermudezjosue183@gmail.com
 
