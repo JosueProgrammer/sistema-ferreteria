@@ -6,21 +6,29 @@
     var productos = (IEnumerable<Sistema_Ferreteria.Models.Inventario.Producto>)ViewBag.Productos;
 }
 
+@functions {
+    bool HasPermission(string code) => User.Claims.Any(c => c.Type == "Permiso" && c.Value == code);
+}
+
+
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
     <div class="page-header mb-0">
         <h1>Compras</h1>
         <p class="subtitle">Gestionar pedidos de proveedores y reabastecimiento</p>
     </div>
-    <div class="d-flex gap-2">
-        <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalProveedores">
-            <i class="bi bi-person-badge"></i>
-            Proveedores
-        </button>
-        <button type="button" class="btn-erp-outline" data-bs-toggle="collapse" data-bs-target="#formNuevoPedido">
-            <i class="bi bi-plus-lg"></i>
-            Nuevo Pedido de Compra
-        </button>
-    </div>
+    @if (HasPermission("COMPRAS_GESTION"))
+    {
+        <div class="d-flex gap-2">
+            <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalProveedores">
+                <i class="bi bi-person-badge"></i>
+                Proveedores
+            </button>
+            <button type="button" class="btn-erp-outline" data-bs-toggle="collapse" data-bs-target="#formNuevoPedido">
+                <i class="bi bi-plus-lg"></i>
+                Nuevo Pedido de Compra
+            </button>
+        </div>
+    }
 </div>
 
 <!-- Formulario crear pedido (colapsable) -->
@@ -217,33 +225,40 @@
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 align-items-center">
-                    @if (compra.Estado == "Pendiente")
+                    @if (HasPermission("COMPRAS_GESTION"))
                     {
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-compra" data-id="@compra.IdCompra">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </button>
-                        
-                        <div class="ms-auto d-flex gap-2">
-                             @if (!estaPagado)
-                             {
-                                <button type="button" class="btn btn-sm btn-erp-primary btn-pagar-recibir" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
-                                    <i class="bi bi-cash-stack me-1"></i> Pagar y Recibir
-                                </button>
-                             }
-                            <button type="button" class="btn btn-sm btn-success btn-recibir-compra" data-id="@compra.IdCompra">
-                                <i class="bi bi-box-seam me-1"></i> Solo Recibir
+                        @if (compra.Estado == "Pendiente")
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-compra" data-id="@compra.IdCompra">
+                                <i class="bi bi-trash"></i> Eliminar
                             </button>
-                        </div>
-                    }
-                    else if (!estaPagado)
-                    {
-                        <button type="button" class="btn btn-sm btn-erp-primary ms-auto btn-pagar-solo" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
-                            <i class="bi bi-cash me-1"></i> Registrar Pago
-                        </button>
+                            
+                            <div class="ms-auto d-flex gap-2">
+                                @if (!estaPagado)
+                                {
+                                    <button type="button" class="btn btn-sm btn-erp-primary btn-pagar-recibir" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                                        <i class="bi bi-cash-stack me-1"></i> Pagar y Recibir
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-sm btn-success btn-recibir-compra" data-id="@compra.IdCompra">
+                                    <i class="bi bi-box-seam me-1"></i> Solo Recibir
+                                </button>
+                            </div>
+                        }
+                        else if (!estaPagado)
+                        {
+                            <button type="button" class="btn btn-sm btn-erp-primary ms-auto btn-pagar-solo" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
+                                <i class="bi bi-cash me-1"></i> Registrar Pago
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="text-muted small ms-auto"><i class="bi bi-check-all me-1"></i> Operación completada y pagada.</span>
+                        }
                     }
                     else
                     {
-                        <span class="text-muted small ms-auto"><i class="bi bi-check-all me-1"></i> Operación completada y pagada.</span>
+                        <span class="text-muted small ms-auto">Solo lectura</span>
                     }
                 </div>
             </div>

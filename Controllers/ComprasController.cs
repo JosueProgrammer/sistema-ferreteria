@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Data;
 using Sistema_Ferreteria.Models.Compras;
 using Sistema_Ferreteria.Models.Inventario;
-using Microsoft.AspNetCore.Authorization; // Added this using statement
+using Microsoft.AspNetCore.Authorization;
+using Sistema_Ferreteria.Filters;
 
 namespace Sistema_Ferreteria.Controllers
 {
     [Authorize]
-public class ComprasController : Controller
+    public class ComprasController : Controller
     {
         private readonly ApplicationDbContext _context;
 
@@ -17,6 +18,7 @@ public class ComprasController : Controller
             _context = context;
         }
 
+        [Permiso("COMPRAS_VER")]
         public async Task<IActionResult> Index()
         {
             var compras = await _context.Compras
@@ -44,6 +46,7 @@ public class ComprasController : Controller
         }
 
         [HttpPost]
+        [Permiso("COMPRAS_GESTION")]
         public async Task<IActionResult> Crear([FromBody] Compra compra)
         {
             if (!ModelState.IsValid)
@@ -120,6 +123,7 @@ public class ComprasController : Controller
         }
 
         [HttpPost]
+        [Permiso("COMPRAS_GESTION")]
         public async Task<IActionResult> RegistrarPago([FromBody] PagoRequest req)
         {
             var compra = await _context.Compras.FindAsync(req.IdCompra);
@@ -145,6 +149,7 @@ public class ComprasController : Controller
         }
 
         [HttpPost]
+        [Permiso("COMPRAS_GESTION")]
         public async Task<IActionResult> PagarYRecibir([FromBody] PagoRequest req)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -179,6 +184,7 @@ public class ComprasController : Controller
         }
 
         [HttpPost]
+        [Permiso("COMPRAS_GESTION")]
         public async Task<IActionResult> Recibir(long id)
         {
             var compra = await _context.Compras
@@ -235,6 +241,7 @@ public class ComprasController : Controller
         }
 
         [HttpPost]
+        [Permiso("COMPRAS_GESTION")]
         public async Task<IActionResult> Eliminar(long id)
         {
             var compra = await _context.Compras.FindAsync(id);

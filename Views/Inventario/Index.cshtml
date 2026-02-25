@@ -6,25 +6,33 @@
     var unidades = ViewBag.UnidadesMedida as IEnumerable<Sistema_Ferreteria.Models.Inventario.UnidadMedida>;
 }
 
+@functions {
+    bool HasPermission(string code) => User.Claims.Any(c => c.Type == "Permiso" && c.Value == code);
+}
+
+
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div class="page-header mb-0">
         <h1>Inventario</h1>
         <p class="subtitle">Gestionar productos, categorías y niveles de stock</p>
     </div>
-    <div class="d-flex gap-2">
-        <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalCategorias">
-            <i class="bi bi-tags"></i>
-            Categorías
-        </button>
-        <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalUnidades">
-            <i class="bi bi-rulers"></i>
-            Unidades
-        </button>
-        <button type="button" class="btn-erp-primary" onclick="abrirModalNuevo()">
-            <i class="bi bi-plus-lg"></i>
-            Agregar Producto
-        </button>
-    </div>
+    @if (HasPermission("PRODUCTOS_GESTION"))
+    {
+        <div class="d-flex gap-2">
+            <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalCategorias">
+                <i class="bi bi-tags"></i>
+                Categorías
+            </button>
+            <button type="button" class="btn-erp-secondary" data-bs-toggle="modal" data-bs-target="#modalUnidades">
+                <i class="bi bi-rulers"></i>
+                Unidades
+            </button>
+            <button type="button" class="btn-erp-primary" onclick="abrirModalNuevo()">
+                <i class="bi bi-plus-lg"></i>
+                Agregar Producto
+            </button>
+        </div>
+    }
 </div>
 
 @{
@@ -164,9 +172,16 @@
                             </td>
                             <td>
                                 <div class="action-icons">
-                                    <button onclick="abrirModalAjuste(@item.IdProducto, '@item.Nombre')" title="Ajustar Stock" class="text-warning"><i class="bi bi-box-seam"></i></button>
-                                    <button onclick='prepararEdicion(@Html.Raw(Json.Serialize(item)))' title="Editar" class="text-primary"><i class="bi bi-pencil"></i></button>
-                                    <button onclick="eliminarProducto(@item.IdProducto)" title="Eliminar" class="text-danger"><i class="bi bi-trash"></i></button>
+                                    @if (HasPermission("PRODUCTOS_GESTION"))
+                                    {
+                                        <button onclick="abrirModalAjuste(@item.IdProducto, '@item.Nombre')" title="Ajustar Stock" class="text-warning"><i class="bi bi-box-seam"></i></button>
+                                        <button onclick='prepararEdicion(@Html.Raw(Json.Serialize(item)))' title="Editar" class="text-primary"><i class="bi bi-pencil"></i></button>
+                                        <button onclick="eliminarProducto(@item.IdProducto)" title="Eliminar" class="text-danger"><i class="bi bi-trash"></i></button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Sin permisos</span>
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -215,15 +230,22 @@
                         </div>
                     </div>
                     <div class="product-card-footer">
-                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="abrirModalAjuste(@item.IdProducto, '@item.Nombre')">
-                            <i class="bi bi-box-seam me-1"></i> Ajustar
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick='prepararEdicion(@Html.Raw(Json.Serialize(item)))'>
-                            <i class="bi bi-pencil me-1"></i> Editar
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarProducto(@item.IdProducto)">
-                            <i class="bi bi-trash me-1"></i> Eliminar
-                        </button>
+                        @if (HasPermission("PRODUCTOS_GESTION"))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning" onclick="abrirModalAjuste(@item.IdProducto, '@item.Nombre')">
+                                <i class="bi bi-box-seam me-1"></i> Ajustar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick='prepararEdicion(@Html.Raw(Json.Serialize(item)))'>
+                                <i class="bi bi-pencil me-1"></i> Editar
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarProducto(@item.IdProducto)">
+                                <i class="bi bi-trash me-1"></i> Eliminar
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="text-muted small w-100 text-center">Lectura únicamente</span>
+                        }
                     </div>
                 </div>
             }
@@ -353,7 +375,7 @@
                             <i class="bi bi-info-circle me-2"></i> Aquí puedes configurar cómo vendes este producto (Ej: Caja de 12, Bolsa de 5kg).
                         </div>
                         <div class="bg-light p-3 rounded mb-3">
-                            <div class="row g-2">
+                            <div class="row g-2 mb-2">
                                 <div class="col-md-4">
                                     <label class="small fw-bold">Nombre</label>
                                     <input type="text" id="presNombre" class="form-control-erp" placeholder="Ej: Caja">
@@ -372,10 +394,30 @@
                                     <input type="number" id="presFactor" class="form-control-erp" placeholder="1" value="1">
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="small fw-bold">Precio</label>
-                                    <div class="input-group">
+                                    <label class="small fw-bold">Principal</label>
+                                    <div class="form-check form-switch mt-1">
+                                        <input class="form-check-input" type="checkbox" id="presEsPrincipal">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Cod. Barras</label>
+                                    <input type="text" id="presCodigoBarras" class="form-control-erp" placeholder="Escanear...">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Precio Compra</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">C$</span>
+                                        <input type="number" id="presPrecioCompra" class="form-control-erp" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small fw-bold">Precio Venta</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text">C$</span>
                                         <input type="number" id="presPrecio" class="form-control-erp" placeholder="0.00">
-                                        <button class="btn btn-primary" type="button" onclick="agregarPresentacion()">+</button>
+                                        <button class="btn btn-primary" type="button" id="btnAgregarPres" onclick="agregarPresentacion()">+</button>
                                     </div>
                                 </div>
                             </div>
@@ -387,12 +429,15 @@
                                         <th>Presentación</th>
                                         <th>Unidad</th>
                                         <th>Factor</th>
-                                        <th>Precio</th>
+                                        <th>Venta</th>
+                                        <th>Compra</th>
+                                        <th>Cod. Barras</th>
+                                        <th>Prin.</th>
                                         <th>Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="text-center"><td colspan="5" class="py-3 text-muted">No hay presentaciones adicionales</td></tr>
+                                    <tr class="text-center"><td colspan="8" class="py-3 text-muted">No hay presentaciones adicionales</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -654,7 +699,11 @@
             focus: false // Evita que el modal atrape el foco y bloquee los prompts rápidos
         });
 
+        let filaEdicion = null;
+
         function abrirModalNuevo() {
+            filaEdicion = null;
+            document.getElementById('btnAgregarPres').innerHTML = '+';
             document.getElementById('formProducto').reset();
             document.getElementById('IdProducto').value = 0;
             document.getElementById('modalTitulo').innerText = 'Nuevo Producto';
@@ -665,6 +714,9 @@
         }
 
         function prepararEdicion(p) {
+            filaEdicion = null;
+            document.getElementById('btnAgregarPres').innerHTML = '+';
+            document.getElementById('formProducto').reset();
             document.getElementById('IdProducto').value = p.idProducto;
             document.getElementById('Codigo').value = p.codigo;
             document.getElementById('CodigoBarras').value = p.codigoBarras || '';
@@ -685,17 +737,27 @@
             if (p.presentaciones && p.presentaciones.length > 0) {
                 p.presentaciones.forEach(pres => {
                     const unitName = pres.unidadPresentacion ? pres.unidadPresentacion.nombre : (document.querySelector(`#presUnidad option[value="${pres.idUnidadPresentacion}"]`)?.text || 'Unidad');
-                    const row = `<tr data-unit-id="${pres.idUnidadPresentacion}" data-id="${pres.idPresentacion}">
+                    const row = `<tr data-unit-id="${pres.idUnidadPresentacion}" data-id="${pres.idPresentacion}" 
+                                     data-barcode="${pres.codigoBarras || ''}" data-purchase-price="${pres.precioCompra || 0}" 
+                                     data-is-principal="${pres.esPrincipal}">
                         <td>${pres.nombrePresentacion}</td>
                         <td>${unitName}</td>
                         <td>${pres.factorConversion}</td>
-                        <td>C$${parseFloat(pres.precioVenta).toFixed(2)}</td>
-                        <td><button type="button" class="btn btn-sm text-danger" onclick="this.parentElement.parentElement.remove()"><i class="bi bi-trash"></i></button></td>
+                        <td class="text-primary fw-bold">C$${parseFloat(pres.precioVenta).toFixed(2)}</td>
+                        <td class="text-muted small">C$${parseFloat(pres.precioCompra || 0).toFixed(2)}</td>
+                        <td class="small">${pres.codigoBarras || '-'}</td>
+                        <td>${pres.esPrincipal ? '<i class="bi bi-star-fill text-warning"></i>' : ''}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm text-primary" onclick="editarPresentacion(this)"><i class="bi bi-pencil"></i></button>
+                                <button type="button" class="btn btn-sm text-danger" onclick="this.parentElement.parentElement.parentElement.remove()"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </td>
                     </tr>`;
                     tbody.innerHTML += row;
                 });
             } else {
-                tbody.innerHTML = '<tr class="text-center"><td colspan="5" class="py-3 text-muted">No hay presentaciones adicionales</td></tr>';
+                tbody.innerHTML = '<tr class="text-center"><td colspan="8" class="py-3 text-muted">No hay presentaciones adicionales</td></tr>';
             }
 
             document.getElementById('productErrorAlert').classList.add('d-none');
@@ -768,6 +830,9 @@
                     idUnidadPresentacion: parseInt(tr.getAttribute('data-unit-id')),
                     factorConversion: parseFloat(cells[2].innerText),
                     precioVenta: parseFloat(cells[3].innerText.replace(/[^\d.-]/g, '')),
+                    precioCompra: parseFloat(tr.getAttribute('data-purchase-price')) || 0,
+                    codigoBarras: tr.getAttribute('data-barcode'),
+                    esPrincipal: tr.getAttribute('data-is-principal') === 'true',
                     estado: true
                 });
             });
@@ -880,34 +945,92 @@
             } catch (error) { showNotification('Error', 'No pudo crearse', 'error'); }
         }
 
+        function editarPresentacion(btn) {
+            filaEdicion = btn.closest('tr');
+            const data = {
+                id: filaEdicion.getAttribute('data-id'),
+                unitId: filaEdicion.getAttribute('data-unit-id'),
+                barcode: filaEdicion.getAttribute('data-barcode'),
+                purchasePrice: filaEdicion.getAttribute('data-purchase-price'),
+                isPrincipal: filaEdicion.getAttribute('data-is-principal') === 'true',
+                nombre: filaEdicion.cells[0].innerText,
+                factor: filaEdicion.cells[2].innerText,
+                precio: filaEdicion.cells[3].innerText.replace(/[^\d.-]/g, '')
+            };
+
+            document.getElementById('presNombre').value = data.nombre;
+            document.getElementById('presUnidad').value = data.unitId;
+            document.getElementById('presFactor').value = data.factor;
+            document.getElementById('presPrecio').value = data.precio;
+            document.getElementById('presPrecioCompra').value = data.purchasePrice;
+            document.getElementById('presCodigoBarras').value = data.barcode;
+            document.getElementById('presEsPrincipal').checked = data.isPrincipal;
+
+            document.getElementById('btnAgregarPres').innerHTML = '<i class="bi bi-check-lg"></i>';
+            document.getElementById('presNombre').focus();
+        }
+
         function agregarPresentacion() {
-            const nombre = document.getElementById('presNombre').value;
+            const nombre = document.getElementById('presNombre').value.trim();
             const factor = document.getElementById('presFactor').value;
             const precio = document.getElementById('presPrecio').value;
+            const precioCompra = document.getElementById('presPrecioCompra').value || 0;
+            const codigoBarras = document.getElementById('presCodigoBarras').value.trim();
+            const esPrincipal = document.getElementById('presEsPrincipal').checked;
+            
             const unitSelect = document.getElementById('presUnidad');
             const unitId = unitSelect.value;
             const unitName = unitSelect.options[unitSelect.selectedIndex].text;
 
             if(!nombre || !factor || !precio) {
-                showNotification('Atención', 'Por favor complete todos los campos de la presentación', 'warning');
+                showNotification('Atención', 'Por favor complete: Nombre, Factor y Precio de Venta', 'warning');
                 return;
             }
 
             const tbody = document.querySelector('#tablaPresentaciones tbody');
-            if(tbody.innerText.includes('No hay presentaciones')) tbody.innerHTML = '';
+            if(tbody.querySelector('td.text-muted')) tbody.innerHTML = '';
 
-            const row = `<tr data-unit-id="${unitId}">
+            const rowContent = `
                 <td>${nombre}</td>
                 <td>${unitName}</td>
                 <td>${factor}</td>
-                <td>C$${parseFloat(precio).toFixed(2)}</td>
-                <td><button type="button" class="btn btn-sm text-danger" onclick="this.parentElement.parentElement.remove()"><i class="bi bi-trash"></i></button></td>
-            </tr>`;
-            tbody.innerHTML += row;
+                <td class="text-primary fw-bold">C$${parseFloat(precio).toFixed(2)}</td>
+                <td class="text-muted small">C$${parseFloat(precioCompra).toFixed(2)}</td>
+                <td class="small">${codigoBarras || '-'}</td>
+                <td>${esPrincipal ? '<i class="bi bi-star-fill text-warning"></i>' : ''}</td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm text-primary" onclick="editarPresentacion(this)"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-sm text-danger" onclick="this.parentElement.parentElement.parentElement.remove()"><i class="bi bi-trash"></i></button>
+                    </div>
+                </td>`;
 
+            if (filaEdicion) {
+                filaEdicion.setAttribute('data-unit-id', unitId);
+                filaEdicion.setAttribute('data-barcode', codigoBarras);
+                filaEdicion.setAttribute('data-purchase-price', precioCompra);
+                filaEdicion.setAttribute('data-is-principal', esPrincipal);
+                filaEdicion.innerHTML = rowContent;
+                filaEdicion = null;
+                document.getElementById('btnAgregarPres').innerHTML = '+';
+            } else {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-unit-id', unitId);
+                tr.setAttribute('data-id', '0');
+                tr.setAttribute('data-barcode', codigoBarras);
+                tr.setAttribute('data-purchase-price', precioCompra);
+                tr.setAttribute('data-is-principal', esPrincipal);
+                tr.innerHTML = rowContent;
+                tbody.appendChild(tr);
+            }
+
+            // Limpiar campos
             document.getElementById('presNombre').value = '';
             document.getElementById('presFactor').value = '1';
             document.getElementById('presPrecio').value = '';
+            document.getElementById('presPrecioCompra').value = '';
+            document.getElementById('presCodigoBarras').value = '';
+            document.getElementById('presEsPrincipal').checked = false;
         }
 
         const modalAjuste = new bootstrap.Modal(document.getElementById('modalAjusteStock'));

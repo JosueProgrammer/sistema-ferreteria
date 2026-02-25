@@ -4,16 +4,19 @@ using Sistema_Ferreteria.Data;
 using Sistema_Ferreteria.Models.Seguridad;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 
 namespace Sistema_Ferreteria.Controllers;
 
 public class CuentasController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IPasswordHasher<Usuario> _passwordHasher;
 
-    public CuentasController(ApplicationDbContext context)
+    public CuentasController(ApplicationDbContext context, IPasswordHasher<Usuario> passwordHasher)
     {
         _context = context;
+        _passwordHasher = passwordHasher;
     }
 
     [HttpGet]
@@ -36,6 +39,8 @@ public class CuentasController : Controller
             .IgnoreQueryFilters() // Must ignore filters to find user across tenants if needed
             .Include(u => u.UsuarioRoles)
                 .ThenInclude(ur => ur.Rol)
+                    .ThenInclude(r => r.RolPermisos)
+                        .ThenInclude(rp => rp.Permiso)
             .FirstOrDefaultAsync(u => u.NombreUsuario == model.Usuario && !u.Eliminado && u.Estado);
 
         if (usuario == null)
@@ -44,13 +49,33 @@ public class CuentasController : Controller
             return View(model);
         }
 
-        // TODO: En producción usar hashing real.
-        if (usuario.ContraseñaHash != model.Password) 
+        var result = _passwordHasher.VerifyHashedPassword(usuario, usuario.ContraseñaHash, model.Password);
+        
+        if (result == PasswordVerificationResult.Failed)
         {
-             ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
-             return View(model);
+            // Fallback para migración: si la contraseña guardada coincide exactamente con la plana
+            // (esto significa que aún no ha sido hasheada)
+            if (usuario.ContraseñaHash == model.Password)
+            {
+                // Hashear y actualizar ahora mismo
+                usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, model.Password);
+                _context.Usuarios.Update(usuario);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
+                return View(model);
+            }
         }
-
+        else if (result == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            // Actualizar hash si el algoritmo cambió o se fortaleció
+            usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, model.Password);
+            _context.Usuarios.Update(usuario);
+            await _context.SaveChangesAsync();
+        }
+        
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, usuario.NombreUsuario),
@@ -59,9 +84,19 @@ public class CuentasController : Controller
             new Claim("TenantId", usuario.TenantId) // Critical for multi-tenancy
         };
 
-        foreach (var rol in usuario.UsuarioRoles)
+        // Agregar roles y permisos
+        var permisosProcesados = new HashSet<string>();
+        foreach (var ur in usuario.UsuarioRoles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, rol.Rol.Nombre));
+            claims.Add(new Claim(ClaimTypes.Role, ur.Rol.Nombre));
+            foreach (var rp in ur.Rol.RolPermisos)
+            {
+                if (rp.Permiso != null && !permisosProcesados.Contains(rp.Permiso.Codigo))
+                {
+                    claims.Add(new Claim("Permiso", rp.Permiso.Codigo));
+                    permisosProcesados.Add(rp.Permiso.Codigo);
+                }
+            }
         }
 
         var claimsIdentity = new ClaimsIdentity(claims, "FerreteriaAuth");

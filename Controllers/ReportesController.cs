@@ -11,8 +11,13 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System.IO;
 
+using Microsoft.AspNetCore.Authorization;
+using Sistema_Ferreteria.Filters;
+
 namespace Sistema_Ferreteria.Controllers
 {
+    [Authorize]
+    [Permiso("REPORTES_VER")]
     public class ReportesController : Controller
     {
         private readonly ApplicationDbContext _context;

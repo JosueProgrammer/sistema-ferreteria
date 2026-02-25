@@ -1,0 +1,282 @@
+@model Sistema_Ferreteria.Models.Seguridad.Usuario
+@{
+    ViewData["Title"] = "Mi Perfil";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="page-header mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Mi Perfil</h1>
+    <p class="text-muted">Gestiona tu información personal y seguridad</p>
+</div>
+
+<div class="row g-4">
+    <!-- Columna Izquierda: Info de Usuario -->
+    <div class="col-md-4">
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden h-100">
+                    <div class="card-body text-center p-5">
+                        <div class="profile-avatar-large mx-auto mb-4 scale-up">
+                            @Model.Nombre.Substring(0, 1).ToUpper()
+                        </div>
+                        <h4 class="fw-bold mb-1">@Model.Nombre</h4>
+                        <p class="text-muted mb-3">@@@Model.NombreUsuario</p>
+                        
+                        <div class="mt-4">
+                            @foreach (var ur in Model.UsuarioRoles)
+                            {
+                                <span class="badge bg-soft-primary px-3 py-2 rounded-pill mb-1">
+                                    <i class="bi bi-shield-check me-1"></i> @ur.Rol.Nombre
+                                </span>
+                            }
+                        </div>
+                        
+                        <hr class="my-4 opacity-5">
+                        
+                        <div class="row text-start g-3 small">
+                            <div class="col-12">
+                                <label class="text-muted mb-1 d-block">Miembro desde</label>
+                                <span class="fw-medium">@Model.FechaCreacion.ToString("dd MMMM yyyy")</span>
+                            </div>
+                            <div class="col-12">
+                                <label class="text-muted mb-1 d-block">Estado de cuenta</label>
+                                @if(Model.Estado) {
+                                    <span class="badge bg-success-soft text-success border-0 px-2">Activo</span>
+                                } else {
+                                    <span class="badge bg-danger-soft text-danger border-0 px-2">Inactivo</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    <!-- Columna Derecha: Información y Seguridad -->
+    <div class="col-md-8">
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+                    <div class="card-header bg-white border-0 p-4">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2 text-primary"></i>Información Personal</h5>
+                    </div>
+                    <div class="card-body p-4 pt-0">
+                        <form onsubmit="actualizarInfo(event)">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-uppercase opacity-75">Nombre Completo</label>
+                                    <input type="text" name="nombre" class="form-control form-control-modern" value="@Model.Nombre" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold text-uppercase opacity-75">Nombre de Usuario</label>
+                                    <input type="text" name="nombreUsuario" class="form-control form-control-modern" value="@Model.NombreUsuario" required>
+                                </div>
+                                <div class="col-12 pt-2">
+                                    <button type="submit" class="btn btn-primary-soft w-100 fw-bold py-2">
+                                        Guardar Cambios
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                    <div class="card-header bg-white border-0 p-4">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-lock me-2 text-primary"></i>Seguridad de la Cuenta</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="formCambioPass" onsubmit="cambiarPassword(event)">
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-uppercase opacity-75">Contraseña Actual</label>
+                                <div class="input-group input-group-modern">
+                                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-key"></i></span>
+                                    <input type="password" name="passwordActual" class="form-control border-x-0 ps-0" required placeholder="Ingresa tu contraseña actual">
+                                    <button class="btn btn-outline-light border-start-0 text-muted" type="button" onclick="togglePassword(this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text x-small">Necesitamos validar tu identidad antes de realizar cambios.</div>
+                            </div>
+                            
+                            <hr class="my-4 opacity-10">
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold text-uppercase opacity-75">Nueva Contraseña</label>
+                                <div class="input-group input-group-modern">
+                                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-shield-lock"></i></span>
+                                    <input type="password" id="nuevaPassword" name="nuevaPassword" class="form-control border-x-0 ps-0" required placeholder="Mínimo 6 caracteres">
+                                    <button class="btn btn-outline-light border-start-0 text-muted" type="button" onclick="togglePassword(this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label small fw-bold text-uppercase opacity-75">Confirmar Nueva Contraseña</label>
+                                <div class="input-group input-group-modern">
+                                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-check2-circle"></i></span>
+                                    <input type="password" id="confirmPassword" class="form-control border-x-0 ps-0" required placeholder="Repite la nueva contraseña">
+                                    <button class="btn btn-outline-light border-start-0 text-muted" type="button" onclick="togglePassword(this)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" id="btnGuardarPass" class="btn btn-primary w-100 py-3 rounded-3 fw-bold">
+                                <i class="bi bi-save me-2"></i> Actualizar Contraseña
+                            </button>
+                        </form>
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function togglePassword(btn) {
+            const input = btn.parentElement.querySelector('input');
+            const icon = btn.querySelector('i');
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+
+        async function actualizarInfo(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const formData = new FormData(e.target);
+            const data = new URLSearchParams(formData);
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Guardando...';
+
+            try {
+                const response = await fetch('/Usuarios/ActualizarInformacion', {
+                    method: 'POST',
+                    body: data
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('¡Éxito!', result.message, 'success');
+                } else {
+                    showNotification('Error', result.message, 'error');
+                }
+            } catch (err) {
+                showNotification('Error', 'No se pudo actualizar la información', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Guardar Cambios';
+            }
+        }
+
+        async function cambiarPassword(e) {
+            e.preventDefault();
+            const pass = document.getElementById('nuevaPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const btn = document.getElementById('btnGuardarPass');
+
+            if (pass !== confirm) {
+                showNotification('Error', 'Las contraseñas no coinciden', 'warning');
+                return;
+            }
+
+            if (pass.length < 4) {
+                showNotification('Error', 'La contraseña debe ser más larga', 'warning');
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const data = new URLSearchParams(formData);
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
+
+            try {
+                const response = await fetch('/Usuarios/CambiarPassword', {
+                    method: 'POST',
+                    body: data
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('¡Éxito!', result.message, 'success');
+                    e.target.reset();
+                } else {
+                    showNotification('Atención', result.message, 'error');
+                }
+            } catch (err) {
+                showNotification('Error', 'No se pudo procesar la solicitud', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-save me-2"></i> Actualizar Contraseña';
+            }
+        }
+    </script>
+}
+
+<style>
+    .bg-soft-primary {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: #4361ee;
+    }
+    .btn-primary-soft {
+        background-color: rgba(67, 97, 238, 0.08);
+        color: #4361ee;
+        border: 1px solid rgba(67, 97, 238, 0.2);
+        transition: all 0.2s ease;
+    }
+    .btn-primary-soft:hover {
+        background-color: #4361ee;
+        color: white;
+    }
+    .form-control-modern {
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(0,0,0,0.08);
+        background-color: #fcfcfd;
+    }
+    .form-control-modern:focus {
+        background-color: white;
+        border-color: #4361ee;
+        box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+    }
+    .profile-avatar-large {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #4361ee 0%, #3f37c9 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: 700;
+        border-radius: 2.5rem;
+        box-shadow: 0 10px 20px rgba(67, 97, 238, 0.2);
+    }
+    .input-group-modern .form-control:focus {
+        box-shadow: none;
+    }
+    .input-group-modern .input-group-text {
+        border-right: none;
+        color: #adb5bd;
+    }
+    .input-group-modern .form-control.border-x-0 {
+        border-left: none;
+        border-right: none;
+    }
+    .input-group-modern:focus-within .input-group-text,
+    .input-group-modern:focus-within .form-control,
+    .input-group-modern:focus-within .btn {
+        border-color: #4361ee;
+        color: #212529;
+    }
+    .input-group-modern .btn:hover {
+        background-color: transparent;
+        color: #4361ee !important;
+    }
+    .x-small { font-size: 0.75rem; }
+    .bg-success-soft { background-color: rgba(25, 135, 84, 0.1); }
+    .bg-danger-soft { background-color: rgba(220, 53, 69, 0.1); }
+</style>

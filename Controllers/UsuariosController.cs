@@ -4,18 +4,25 @@ using Sistema_Ferreteria.Data;
 using Sistema_Ferreteria.Models.Seguridad;
 using Microsoft.AspNetCore.Authorization;
 
+using Microsoft.AspNetCore.Identity;
+
+using Sistema_Ferreteria.Filters;
+
 namespace Sistema_Ferreteria.Controllers;
 
 [Authorize]
 public class UsuariosController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IPasswordHasher<Usuario> _passwordHasher;
 
-    public UsuariosController(ApplicationDbContext context)
+    public UsuariosController(ApplicationDbContext context, IPasswordHasher<Usuario> passwordHasher)
     {
         _context = context;
+        _passwordHasher = passwordHasher;
     }
 
+    [Permiso("USUARIOS_VER")]
     public async Task<IActionResult> Index()
     {
         var usuarios = await _context.Usuarios
@@ -39,6 +46,7 @@ public class UsuariosController : Controller
     }
 
     [HttpPost]
+    [Permiso("USUARIOS_GESTION")]
     public async Task<IActionResult> GuardarUsuario([FromBody] Usuario usuario, [FromQuery] int[] rolesIds)
     {
         try
@@ -46,8 +54,24 @@ public class UsuariosController : Controller
             if (usuario.IdUsuario == 0)
             {
                 usuario.FechaCreacion = DateTime.UtcNow;
+                // Hash password
+                if (!string.IsNullOrEmpty(usuario.ContraseñaHash))
+                {
+                    usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, usuario.ContraseñaHash);
+                }
+                
                 _context.Usuarios.Add(usuario);
                 await _context.SaveChangesAsync();
+
+                // Asignar roles
+                if (rolesIds != null)
+                {
+                    foreach (var rid in rolesIds)
+                    {
+                        _context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = usuario.IdUsuario, IdRol = rid });
+                    }
+                    await _context.SaveChangesAsync();
+                }
             }
             else
             {
@@ -61,15 +85,18 @@ public class UsuariosController : Controller
                 userDb.NombreUsuario = usuario.NombreUsuario;
                 if (!string.IsNullOrEmpty(usuario.ContraseñaHash))
                 {
-                    userDb.ContraseñaHash = usuario.ContraseñaHash;
+                    userDb.ContraseñaHash = _passwordHasher.HashPassword(userDb, usuario.ContraseñaHash);
                 }
                 userDb.Estado = usuario.Estado;
 
                 // Actualizar roles
                 _context.UsuarioRoles.RemoveRange(userDb.UsuarioRoles);
-                foreach (var rid in rolesIds)
+                if (rolesIds != null)
                 {
-                    _context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = userDb.IdUsuario, IdRol = rid });
+                    foreach (var rid in rolesIds)
+                    {
+                        _context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = userDb.IdUsuario, IdRol = rid });
+                    }
                 }
 
                 await _context.SaveChangesAsync();
@@ -84,6 +111,7 @@ public class UsuariosController : Controller
     }
 
     [HttpPost]
+    [Permiso("ROLES_GESTION")]
     public async Task<IActionResult> GuardarRol([FromBody] Rol rol, [FromQuery] int[] permisosIds)
     {
         try
@@ -128,6 +156,7 @@ public class UsuariosController : Controller
     }
 
     [HttpPost]
+    [Permiso("USUARIOS_GESTION")]
     public async Task<IActionResult> EliminarUsuario(int id)
     {
         var user = await _context.Usuarios.FindAsync(id);
@@ -135,5 +164,87 @@ public class UsuariosController : Controller
         user.Eliminado = true;
         await _context.SaveChangesAsync();
         return Json(new { success = true });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Perfil()
+    {
+        var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim)) return RedirectToAction("Login", "Cuentas");
+
+        int userId = int.Parse(userIdClaim);
+        var usuario = await _context.Usuarios
+            .Include(u => u.UsuarioRoles)
+                .ThenInclude(ur => ur.Rol)
+            .FirstOrDefaultAsync(u => u.IdUsuario == userId);
+
+        if (usuario == null) return NotFound();
+
+        return View(usuario);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CambiarPassword(string passwordActual, string nuevaPassword)
+    {
+        try
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim)) return Json(new { success = false, message = "Sesión no válida" });
+
+            int userId = int.Parse(userIdClaim);
+            var usuario = await _context.Usuarios.FindAsync(userId);
+
+            if (usuario == null) return Json(new { success = false, message = "Usuario no encontrado" });
+
+            var result = _passwordHasher.VerifyHashedPassword(usuario, usuario.ContraseñaHash, passwordActual);
+            if (result == PasswordVerificationResult.Failed)
+            {
+                // Fallback para migración: si la contraseña en DB es texto plano y coincide
+                if (usuario.ContraseñaHash != passwordActual)
+                {
+                    return Json(new { success = false, message = "La contraseña actual es incorrecta" });
+                }
+                // Si llegamos aquí, es porque coincidió en texto plano. 
+                // Continuamos para que se guarde con el nuevo hash abajo.
+            }
+
+            usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, nuevaPassword);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Contraseña actualizada con éxito" });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Error: " + ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> ActualizarInformacion(string nombre, string nombreUsuario)
+    {
+        try
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim)) return Json(new { success = false, message = "Sesión no válida" });
+
+            int userId = int.Parse(userIdClaim);
+            var usuario = await _context.Usuarios.FindAsync(userId);
+
+            if (usuario == null) return Json(new { success = false, message = "Usuario no encontrado" });
+
+            // Verificar si el nombre de usuario ya existe para otro usuario
+            var existe = await _context.Usuarios.AnyAsync(u => u.NombreUsuario == nombreUsuario && u.IdUsuario != userId);
+            if (existe) return Json(new { success = false, message = "El nombre de usuario ya está en uso" });
+
+            usuario.Nombre = nombre;
+            usuario.NombreUsuario = nombreUsuario;
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "Información actualizada correctamente. Los cambios se verán reflejados al iniciar sesión nuevamente." });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Error: " + ex.Message });
+        }
     }
 }

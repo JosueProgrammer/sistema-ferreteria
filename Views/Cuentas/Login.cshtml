@@ -125,6 +125,41 @@
             margin-bottom: 15px;
             display: inline-block;
         }
+        .password-wrapper {
+            position: relative;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: color 0.3s;
+            z-index: 10;
+        }
+
+        .toggle-password:hover {
+            color: #fff;
+        }
+
+        .form-control-erp {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px 15px;
+            transition: all 0.3s;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -147,9 +182,14 @@
             <span asp-validation-for="Usuario" class="text-danger"></span>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-4">
             <label class="form-label">Contraseña</label>
-            <input asp-for="Password" type="password" class="form-control-erp" placeholder="••••••••" autocomplete="current-password" />
+            <div class="password-wrapper">
+                <input asp-for="Password" type="password" id="passwordInput" class="form-control-erp" placeholder="••••••••" autocomplete="current-password" style="padding-right: 45px;" />
+                <button type="button" class="toggle-password" onclick="toggleLoginPassword()">
+                    <i class="bi bi-eye" id="toggleIcon"></i>
+                </button>
+            </div>
             <span asp-validation-for="Password" class="text-danger"></span>
         </div>
 
@@ -163,6 +203,21 @@
         </button>
     </form>
 </div>
+
+<script>
+    function toggleLoginPassword() {
+        const input = document.getElementById('passwordInput');
+        const icon = document.getElementById('toggleIcon');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        }
+    }
+</script>
 
 </body>
 </html>
