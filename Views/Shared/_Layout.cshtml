@@ -26,55 +26,83 @@
             </button>
         </div>
         <nav class="sidebar-nav">
+            @functions {
+                bool HasPermission(string code) => User.Claims.Any(c => c.Type == "Permiso" && c.Value == code);
+            }
             <ul class="menu">
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
-                    <a asp-controller="Home" asp-action="Index">
-                        <i class="bi bi-grid"></i>
-                        <span>Panel Principal</span>
-                    </a>
-                </li>
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventario" ? "active" : "")">
-                    <a asp-controller="Inventario" asp-action="Index">
-                        <i class="bi bi-box-seam"></i>
-                        <span>Inventario</span>
-                    </a>
-                </li>
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Ventas" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
-                    <a asp-controller="Ventas" asp-action="Index">
-                        <i class="bi bi-cart3"></i>
-                        <span>Punto de Venta</span>
-                    </a>
-                </li>
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Ventas" && ViewContext.RouteData.Values["action"]?.ToString() == "Historial" ? "active" : "")">
-                    <a asp-controller="Ventas" asp-action="Historial">
-                        <i class="bi bi-journal-text"></i>
-                        <span>Historial Ventas</span>
-                    </a>
-                </li>
+                @if (HasPermission("DASHBOARD_VER"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
+                        <a asp-controller="Home" asp-action="Index">
+                            <i class="bi bi-grid"></i>
+                            <span>Panel Principal</span>
+                        </a>
+                    </li>
+                }
+
+                @if (HasPermission("INVENTARIO_VER"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Inventario" ? "active" : "")">
+                        <a asp-controller="Inventario" asp-action="Index">
+                            <i class="bi bi-box-seam"></i>
+                            <span>Inventario</span>
+                        </a>
+                    </li>
+                }
+
+                @if (HasPermission("VENTAS_CREAR"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Ventas" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")">
+                        <a asp-controller="Ventas" asp-action="Index">
+                            <i class="bi bi-cart3"></i>
+                            <span>Punto de Venta</span>
+                        </a>
+                    </li>
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Ventas" && ViewContext.RouteData.Values["action"]?.ToString() == "Historial" ? "active" : "")">
+                        <a asp-controller="Ventas" asp-action="Historial">
+                            <i class="bi bi-journal-text"></i>
+                            <span>Historial Ventas</span>
+                        </a>
+                    </li>
+                }
+
                 <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Clientes" ? "active" : "")">
                     <a asp-controller="Clientes" asp-action="Index">
                         <i class="bi bi-people"></i>
                         <span>Clientes</span>
                     </a>
                 </li>
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Compras" ? "active" : "")">
-                    <a asp-controller="Compras" asp-action="Index">
-                        <i class="bi bi-truck"></i>
-                        <span>Compras</span>
-                    </a>
-                </li>
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Reportes" ? "active" : "")">
-                    <a asp-controller="Reportes" asp-action="Index">
-                        <i class="bi bi-bar-chart"></i>
-                        <span>Reportes</span>
-                    </a>
-                </li>
-                <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Usuarios" ? "active" : "")">
-                    <a asp-controller="Usuarios" asp-action="Index">
-                        <i class="bi bi-people"></i>
-                        <span>Usuarios</span>
-                    </a>
-                </li>
+
+                @if (HasPermission("COMPRAS_VER"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Compras" ? "active" : "")">
+                        <a asp-controller="Compras" asp-action="Index">
+                            <i class="bi bi-truck"></i>
+                            <span>Compras</span>
+                        </a>
+                    </li>
+                }
+
+                @if (HasPermission("REPORTES_VER"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Reportes" ? "active" : "")">
+                        <a asp-controller="Reportes" asp-action="Index">
+                            <i class="bi bi-bar-chart"></i>
+                            <span>Reportes</span>
+                        </a>
+                    </li>
+                }
+
+                @if (HasPermission("USUARIOS_VER"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Usuarios" ? "active" : "")">
+                        <a asp-controller="Usuarios" asp-action="Index">
+                            <i class="bi bi-people"></i>
+                            <span>Usuarios</span>
+                        </a>
+                    </li>
+                }
+
                 @if (User.IsInRole("Administrador"))
                 {
                     <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Tenants" ? "active" : "")">
@@ -122,7 +150,7 @@
                                 <p class="mb-0 small fw-bold">Mi Perfil</p>
                                 <p class="mb-0 x-small text-muted">@User.Identity.Name</p>
                             </li>
-                            <li><a class="dropdown-item py-2" href="#"><i class="bi bi-person me-2"></i> Perfil</a></li>
+                            <li><a class="dropdown-item py-2" asp-controller="Usuarios" asp-action="Perfil"><i class="bi bi-person me-2"></i> Perfil</a></li>
                             <li><a class="dropdown-item py-2" href="#"><i class="bi bi-gear me-2"></i> Ajustes</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>

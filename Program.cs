@@ -1,11 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Data;
+using Microsoft.AspNetCore.Identity;
+using Sistema_Ferreteria.Models.Seguridad;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<Sistema_Ferreteria.Services.ITenantService, Sistema_Ferreteria.Services.TenantService>();
+builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options => {
@@ -64,6 +67,8 @@ using (var scope = app.Services.CreateScope())
     try 
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
+        
+        // Ensure Default tenant exists
         if (!context.Tenants.Any(t => t.IdTenant == "Default"))
         {
             context.Tenants.Add(new Sistema_Ferreteria.Models.Seguridad.Tenant
@@ -74,18 +79,31 @@ using (var scope = app.Services.CreateScope())
                 FechaCreacion = DateTime.UtcNow
             });
             context.SaveChanges();
-            
-            // Assign existing data to Default tenant if they are empty
-            context.Database.ExecuteSqlRaw("UPDATE \"Usuarios\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Roles\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Permisos\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Productos\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Categorias\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Ventas\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Clientes\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Proveedores\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Compras\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
-            context.Database.ExecuteSqlRaw("UPDATE \"Configuracion\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = ''");
+        }
+        try 
+        {
+            context.Database.ExecuteSqlRaw("UPDATE \"Usuarios\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Roles\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"UsuarioRol\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"RolPermiso\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Permisos\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Productos\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Categorias\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"UnidadesMedida\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Presentaciones\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"MovimientosInventario\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Ventas\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"DetalleVenta\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Clientes\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Proveedores\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Compras\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"DetalleCompra\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+            context.Database.ExecuteSqlRaw("UPDATE \"Configuracion\" SET \"TenantId\" = 'Default' WHERE \"TenantId\" = '' OR \"TenantId\" IS NULL");
+        }
+        catch (Exception ex)
+        {
+            // If tables don't have TenantId yet (migration not applied), this will fail silently
+            Console.WriteLine($"Nota: No se pudo actualizar TenantId en algunas tablas: {ex.Message}");
         }
     }
     catch (Exception ex)

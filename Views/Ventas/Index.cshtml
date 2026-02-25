@@ -7,6 +7,10 @@
     var categorias = productos.Select(p => p.Categoria?.Nombre ?? "General").Distinct().OrderBy(c => c).ToList();
 }
 
+@functions {
+    bool HasPermission(string code) => User.Claims.Any(c => c.Type == "Permiso" && c.Value == code);
+}
+
 <div class="content-with-cart">
     <!-- Panel Izquierdo: Catálogo de Productos -->
     <div class="catalog-panel">
@@ -105,9 +109,12 @@
                                 <option value="@c.IdCliente">@c.Nombre</option>
                             }
                         </select>
-                        <button class="btn btn-white border-0" type="button" onclick="rapidoCrearCliente()">
-                            <i class="bi bi-person-plus text-primary"></i>
-                        </button>
+                        @if (HasPermission("VENTAS_CREAR"))
+                        {
+                            <button class="btn btn-white border-0" type="button" onclick="rapidoCrearCliente()">
+                                <i class="bi bi-person-plus text-primary"></i>
+                            </button>
+                        }
                     </div>
                 </div>
 
@@ -147,9 +154,18 @@
                     <span class="h5 fw-bold mb-0 text-primary" id="txtTotal">C$ 0.00</span>
                 </div>
 
-                <button class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm mb-2" id="btnFinalizarVenta">
-                    <i class="bi bi-check2-circle me-2"></i> FINALIZAR VENTA
-                </button>
+                @if (HasPermission("VENTAS_CREAR"))
+                {
+                    <button class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm mb-2" id="btnFinalizarVenta">
+                        <i class="bi bi-check2-circle me-2"></i> FINALIZAR VENTA
+                    </button>
+                }
+                else
+                {
+                    <div class="alert alert-warning py-2 small mb-2 text-center">
+                        <i class="bi bi-lock me-1"></i> Solo lectura
+                    </div>
+                }
                 
                 <button class="btn btn-outline-secondary w-100 py-2 btn-sm" data-bs-toggle="modal" data-bs-target="#modalVentasRecientes">
                     <i class="bi bi-clock-history me-1"></i> Ventas Recientes
@@ -201,13 +217,17 @@
                                     <td class="text-end fw-bold">C$ @v.Total.ToString("N2")</td>
                                     <td class="text-center">
                                         <div class="btn-group">
-                                            @if (v.Estado != "Anulada")
+                                            @if (HasPermission("VENTAS_CREAR") && v.Estado != "Anulada")
                                             {
                                                 @if (saldo > 0)
                                                 {
                                                     <button class="btn btn-sm btn-outline-success btn-pagar-venta" data-id="@v.IdVenta" data-total="@saldo"><i class="bi bi-cash"></i></button>
                                                 }
                                                 <button class="btn btn-sm btn-outline-danger btn-anular-venta" data-id="@v.IdVenta"><i class="bi bi-x"></i></button>
+                                            }
+                                            else if (v.Estado == "Anulada")
+                                            {
+                                                <span class="text-muted small">-</span>
                                             }
                                         </div>
                                     </td>

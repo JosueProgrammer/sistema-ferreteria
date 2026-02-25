@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Models.Seguridad;
+using Microsoft.AspNetCore.Identity;
 
 namespace Sistema_Ferreteria.Data;
 
@@ -7,6 +8,7 @@ public static class DbInitializer
 {
     public static async Task Seed(ApplicationDbContext context)
     {
+        var passwordHasher = new PasswordHasher<Usuario>();
         // 1. Permisos Base
         if (!await context.Permisos.IgnoreQueryFilters().AnyAsync())
         {
@@ -62,10 +64,10 @@ public static class DbInitializer
             {
                 Nombre = "Administrador del Sistema",
                 NombreUsuario = "admin",
-                ContraseñaHash = "admin123", // En prod usar hash
                 Estado = true,
                 FechaCreacion = DateTime.UtcNow
             };
+            adminUser.ContraseñaHash = passwordHasher.HashPassword(adminUser, "admin123");
             context.Usuarios.Add(adminUser);
             await context.SaveChangesAsync();
 

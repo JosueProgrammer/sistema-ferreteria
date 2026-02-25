@@ -5,6 +5,7 @@ using Sistema_Ferreteria.Models.Ventas;
 using Sistema_Ferreteria.Models.Inventario;
 using Sistema_Ferreteria.Models.Clientes;
 using Microsoft.AspNetCore.Authorization;
+using Sistema_Ferreteria.Filters;
 
 namespace Sistema_Ferreteria.Controllers
 {
@@ -18,6 +19,7 @@ namespace Sistema_Ferreteria.Controllers
             _context = context;
         }
 
+        [Permiso("VENTAS_CREAR")]
         public async Task<IActionResult> Index()
         {
             var ventas = await _context.Ventas
@@ -44,6 +46,7 @@ namespace Sistema_Ferreteria.Controllers
             return View(ventas);
         }
 
+        [Permiso("VENTAS_CREAR")]
         public async Task<IActionResult> Historial()
         {
             var ventas = await _context.Ventas
@@ -58,6 +61,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpGet]
+        [Permiso("VENTAS_CREAR")]
         public async Task<IActionResult> ObtenerDetalle(long id)
         {
             var venta = await _context.Ventas
@@ -124,6 +128,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("VENTAS_CREAR")]
         public async Task<IActionResult> Crear([FromBody] VentaRequest req)
         {
             if (req.Detalles == null || !req.Detalles.Any())
@@ -244,6 +249,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("VENTAS_CREAR")]
         public async Task<IActionResult> RegistrarPago([FromBody] PagoRequest req)
         {
             var venta = await _context.Ventas.FindAsync(req.IdVenta);
@@ -286,6 +292,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("VENTAS_CREAR")]
         public async Task<IActionResult> Anular(long id, string motivo)
         {
             var venta = await _context.Ventas

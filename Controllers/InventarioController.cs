@@ -4,6 +4,7 @@ using Sistema_Ferreteria.Data;
 using Sistema_Ferreteria.Models.Inventario;
 
 using Microsoft.AspNetCore.Authorization;
+using Sistema_Ferreteria.Filters;
 
 namespace Sistema_Ferreteria.Controllers
 {
@@ -17,6 +18,7 @@ namespace Sistema_Ferreteria.Controllers
             _context = context;
         }
 
+        [Permiso("INVENTARIO_VER")]
         public async Task<IActionResult> Index()
         {
             var productos = await _context.Productos
@@ -33,6 +35,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("PRODUCTOS_GESTION")]
         public async Task<IActionResult> CrearProducto([FromBody] Producto producto)
         {
             if (!ModelState.IsValid)
@@ -82,6 +85,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("PRODUCTOS_GESTION")]
         public async Task<IActionResult> EditarProducto([FromBody] Producto producto)
         {
             if (!ModelState.IsValid)
@@ -136,6 +140,9 @@ namespace Sistema_Ferreteria.Controllers
                         existingPres.IdUnidadPresentacion = p.IdUnidadPresentacion;
                         existingPres.FactorConversion = p.FactorConversion;
                         existingPres.PrecioVenta = p.PrecioVenta;
+                        existingPres.PrecioCompra = p.PrecioCompra;
+                        existingPres.CodigoBarras = p.CodigoBarras;
+                        existingPres.EsPrincipal = p.EsPrincipal;
                     }
                     else
                     {
@@ -154,6 +161,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("PRODUCTOS_GESTION")]
         public async Task<IActionResult> EliminarProducto(int id)
         {
             var producto = await _context.Productos.FindAsync(id);
@@ -166,6 +174,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("PRODUCTOS_GESTION")]
         public async Task<IActionResult> AjustarStock(int idProducto, decimal cantidad, string tipo, string observacion)
         {
             var producto = await _context.Productos.FindAsync(idProducto);
@@ -213,6 +222,7 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [HttpPost]
+        [Permiso("PRODUCTOS_GESTION")]
         public async Task<IActionResult> CrearCategoria([FromBody] Categoria categoria)
         {
             if (!ModelState.IsValid)
@@ -228,6 +238,7 @@ namespace Sistema_Ferreteria.Controllers
 
         // Unidades
         [HttpPost]
+        [Permiso("PRODUCTOS_GESTION")]
         public async Task<IActionResult> CrearUnidad([FromBody] UnidadMedida unidad)
         {
             if (!ModelState.IsValid)
