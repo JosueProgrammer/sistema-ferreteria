@@ -18,8 +18,23 @@
 
     <div id="alertContainer"></div>
 
-    <!-- Contenedor para el formulario dinámico -->
-    <div id="configFormContainer"></div>
+    <div class="card-erp mt-3">
+        <div class="card-body">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+                <div>
+                    <h5 class="mb-1">Secciones de configuración</h5>
+                    <p class="text-muted small mb-0">
+                        Selecciona una pestaña para personalizar las diferentes áreas del sistema.
+                    </p>
+                </div>
+            </div>
+
+            <ul class="nav nav-pills config-tabs mb-3" id="configTabs"></ul>
+
+            <!-- Contenedor para el formulario dinámico -->
+            <div id="configFormContainer"></div>
+        </div>
+    </div>
 
     <div id="loadingSpinner" class="text-center py-5">
         <div class="spinner-border text-primary" role="status">
@@ -154,23 +169,37 @@
     }
     window.subirImagenPreview = subirImagenPreview;
 
-    function renderSeccion(modulo, items) {
+    function renderSeccion(modulo, items, esActivo) {
         const modId = escapeHtml(modulo).replace(/\s/g, '_');
         const card = document.createElement('div');
-        card.className = 'card shadow-sm mb-4';
+        card.className = 'config-section-card card shadow-sm mb-4 border-0';
+        card.dataset.moduloId = modId;
+        if (!esActivo) {
+            card.classList.add('d-none');
+        }
         card.innerHTML = `
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-folder-fill"></i> ${escapeHtml(modulo)}</h5>
+            <div class="card-header bg-white border-0 border-bottom px-4 pt-4 pb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="role-card-icon">
+                        <i class="bi bi-sliders"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0">${escapeHtml(modulo)}</h5>
+                        <small class="text-muted">Configura los parámetros visuales y funcionales de esta sección.</small>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
+            <div class="card-body px-4 pb-4 pt-3">
                 <form class="config-form" method="post" action="${SAVE_URL}" data-modulo="${escapeHtml(modulo)}">
                     <input type="hidden" name="__RequestVerificationToken" value="${getCsrfToken()}" />
                     <input type="hidden" name="modulo" value="${escapeHtml(modulo)}" />
                     <div class="row g-3" id="fields-${modId}"></div>
                     <hr class="my-4" />
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="bi bi-save-fill"></i> Guardar Sección
-                    </button>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-save-fill me-1"></i> Guardar cambios de esta sección
+                        </button>
+                    </div>
                 </form>
             </div>
         `;
@@ -183,7 +212,12 @@
     function cargarConfiguraciones(usarPrueba = false) {
         const container = document.getElementById('configFormContainer');
         const spinner = document.getElementById('loadingSpinner');
+        const tabsContainer = document.getElementById('configTabs');
+
         container.innerHTML = '';
+        if (tabsContainer) {
+            tabsContainer.innerHTML = '';
+        }
 
         const fetchData = usarPrueba
             ? Promise.resolve(DATOS_PRUEBA)
@@ -198,8 +232,39 @@
                 console.log(`[Configuracion] Módulo '${mod}' tiene ${items.length} ítem(s)`);
             }
 
-            Object.entries(grupos).forEach(([modulo, items]) => {
-                container.appendChild(renderSeccion(modulo, items));
+            const entradas = Object.entries(grupos);
+
+            entradas.forEach(([modulo, items], index) => {
+                const modId = escapeHtml(modulo).replace(/\s/g, '_');
+
+                if (tabsContainer) {
+                    const li = document.createElement('li');
+                    li.className = 'nav-item';
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'nav-link config-tab-link' + (index === 0 ? ' active' : '');
+                    btn.dataset.target = modId;
+                    btn.innerHTML = `<i class="bi bi-folder2-open me-1"></i> ${escapeHtml(modulo)}`;
+
+                    btn.addEventListener('click', function () {
+                        document.querySelectorAll('.config-tab-link').forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+
+                        document.querySelectorAll('.config-section-card').forEach(card => {
+                            if (card.dataset.moduloId === this.dataset.target) {
+                                card.classList.remove('d-none');
+                            } else {
+                                card.classList.add('d-none');
+                            }
+                        });
+                    });
+
+                    li.appendChild(btn);
+                    tabsContainer.appendChild(li);
+                }
+
+                container.appendChild(renderSeccion(modulo, items, index === 0));
             });
 
             // Los formularios se envían por POST tradicional (action + method) con antiforgery
