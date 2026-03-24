@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Data;
@@ -106,6 +107,59 @@ public class CuentasController : Controller
         };
 
         await HttpContext.SignInAsync("FerreteriaAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
+
+        var isAdmin = claims.Any(c => c.Type == ClaimTypes.Role && c.Value == "Administrador");
+        var tenantCount = await _context.Tenants.CountAsync(t => t.Activo);
+        if (isAdmin && tenantCount >= 2)
+            return RedirectToAction("SeleccionarTenant");
+
+        return RedirectToAction("Index", "Home");
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> SeleccionarTenant()
+    {
+        var tenants = await _context.Tenants
+            .Where(t => t.Activo)
+            .OrderBy(t => t.Nombre)
+            .ToListAsync();
+        return View(tenants);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Administrador")]
+    public async Task<IActionResult> SeleccionarTenant(string tenantId)
+    {
+        if (string.IsNullOrEmpty(tenantId))
+        {
+            TempData["Error"] = "Debe seleccionar una sucursal.";
+            return RedirectToAction("SeleccionarTenant");
+        }
+
+        var tenantExists = await _context.Tenants
+            .AnyAsync(t => t.IdTenant == tenantId && t.Activo);
+        if (!tenantExists)
+        {
+            TempData["Error"] = "La sucursal seleccionada no es válida.";
+            return RedirectToAction("SeleccionarTenant");
+        }
+
+        var currentClaims = User.Claims
+            .Where(c => c.Type != "TenantId")
+            .Select(c => new Claim(c.Type, c.Value))
+            .ToList();
+        currentClaims.Add(new Claim("TenantId", tenantId));
+
+        var newIdentity = new ClaimsIdentity(currentClaims, "FerreteriaAuth");
+        var authProperties = new AuthenticationProperties
+        {
+            IsPersistent = true
+        };
+
+        await HttpContext.SignOutAsync("FerreteriaAuth");
+        await HttpContext.SignInAsync("FerreteriaAuth", new ClaimsPrincipal(newIdentity), authProperties);
 
         return RedirectToAction("Index", "Home");
     }

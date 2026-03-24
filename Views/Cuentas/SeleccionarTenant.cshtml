@@ -1,0 +1,199 @@
+@model IEnumerable<Sistema_Ferreteria.Models.Seguridad.Tenant>
+@{
+    Layout = null;
+    var tenants = Model?.ToList() ?? new List<Sistema_Ferreteria.Models.Seguridad.Tenant>();
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seleccionar sucursal - Ferretería ERP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="~/css/site.css" rel="stylesheet" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e1e2d 0%, #151521 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #fff;
+            font-weight: 700;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .login-header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+        }
+
+        .logo-icon {
+            font-size: 40px;
+            color: #dc3545;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .tenant-option {
+            display: block;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tenant-option:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+
+        .tenant-option input {
+            accent-color: #dc3545;
+            margin-right: 12px;
+        }
+
+        .tenant-option label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+
+        .tenant-option .small {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            margin-top: 2px;
+            margin-left: 28px;
+        }
+
+        .btn-login {
+            background: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-login:hover {
+            background: #bb2d3b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .text-danger, .alert-danger {
+            font-size: 13px;
+        }
+
+        .empty-message {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .empty-message a {
+            color: #dc3545;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .empty-message a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="login-header">
+        <span class="logo-icon"><i class="bi bi-buildings"></i></span>
+        <h1>Selecciona la sucursal</h1>
+        <p>Elige con qué empresa o sucursal deseas trabajar</p>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger py-2 small">@TempData["Error"]</div>
+    }
+
+    @if (tenants.Count == 0)
+    {
+        <p class="empty-message">
+            No hay sucursales disponibles.
+            <br />
+            <a asp-controller="Home" asp-action="Index">Ir al inicio</a>
+        </p>
+    }
+    else
+    {
+        <form asp-action="SeleccionarTenant" method="post">
+            @Html.AntiForgeryToken()
+            <div class="tenant-list">
+                @foreach (var t in tenants)
+                {
+                    <div class="tenant-option">
+                        <input type="radio" name="tenantId" value="@t.IdTenant" id="t_@t.IdTenant" />
+                        <label for="t_@t.IdTenant">
+                            @t.Nombre
+                            @if (!string.IsNullOrWhiteSpace(t.Direccion))
+                            {
+                                <span class="small d-block">@t.Direccion</span>
+                            }
+                        </label>
+                    </div>
+                }
+            </div>
+            <button type="submit" class="btn-login" id="btnContinuar">
+                Continuar
+            </button>
+        </form>
+    }
+</div>
+
+</body>
+</html>
