@@ -1,0 +1,232 @@
+@{
+    ViewData["Title"] = "Configuración del Sistema";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="display-5">
+                <i class="bi bi-gear-fill"></i> Configuración del Sistema
+            </h1>
+            <p class="text-muted">
+                Configuraciones dinámicas cargadas desde la base de datos. Los campos se renderizan automáticamente según su tipo.
+            </p>
+        </div>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <!-- Contenedor para el formulario dinámico -->
+    <div id="configFormContainer"></div>
+
+    <div id="loadingSpinner" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2 text-muted">Cargando configuraciones...</p>
+    </div>
+</div>
+
+@* Token antifalsificación para formularios dinámicos *@
+<form id="csrfForm" style="display:none">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+<script>
+(function() {
+    'use strict';
+
+    const API_URL = '/Configuracion/Api/ObtenerConfiguraciones';
+    const SAVE_URL = '/Configuracion/GuardarSeccion';
+
+    // Obtener token CSRF
+    function getCsrfToken() {
+        const input = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]');
+        return input ? input.value : '';
+    }
+
+    // Simulación de datos para prueba de agrupación (descomenta para probar sin BD)
+    const DATOS_PRUEBA = [
+        { idConfig: 1, clave: 'EMPRESA_NOMBRE', valor: 'Mi Ferretería', tipo: 'Texto', modulo: 'General', descripcion: 'Nombre' },
+        { idConfig: 2, clave: 'LOGO_URL', valor: '', tipo: 'Imagen', modulo: 'Personalizacion', descripcion: 'Logo' },
+        { idConfig: 3, clave: 'TEMA_COLOR', valor: '#007bff', tipo: 'Color', modulo: 'Personalizacion', descripcion: 'Color' }
+    ];
+
+    function agregarAlerta(mensaje, tipo) {
+        const container = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${tipo} alert-dismissible fade show`;
+        alert.innerHTML = `
+            <i class="bi bi-${tipo === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill"></i> ${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        container.appendChild(alert);
+    }
+
+    function agruparPorModulo(configuraciones) {
+        const grupos = {};
+        for (const c of configuraciones) {
+            const mod = c.modulo || 'General';
+            if (!grupos[mod]) grupos[mod] = [];
+            grupos[mod].push(c);
+        }
+        return grupos;
+    }
+
+    function renderInput(config) {
+        const wrapper = document.createElement('div');
+        wrapper.className = config.tipo === 'Imagen' ? 'col-md-12 mb-3' : 'col-md-6 mb-3';
+
+        let label = `<label class="form-label fw-bold">${config.clave}</label>`;
+        if (config.descripcion) {
+            label += `<small class="text-muted d-block mb-1">${config.descripcion}</small>`;
+        }
+        wrapper.innerHTML = label;
+
+        let inputHtml = '';
+        const valor = config.valor || '';
+        const checked = (valor === 'true' || valor === '1');
+
+        switch (config.tipo) {
+            case 'Texto':
+                inputHtml = `<input type="text" name="valores[${config.idConfig}]" value="${escapeHtml(valor)}" class="form-control" />`;
+                break;
+            case 'Numero':
+                inputHtml = `<input type="number" name="valores[${config.idConfig}]" value="${escapeHtml(valor)}" step="0.01" class="form-control" />`;
+                break;
+            case 'Booleano':
+                inputHtml = `<div class="form-check">
+                    <input type="hidden" name="valores[${config.idConfig}]" value="${checked ? 'true' : 'false'}" id="hidden_${config.idConfig}" />
+                    <input type="checkbox" class="form-check-input" id="cb_${config.idConfig}" ${checked ? 'checked' : ''}
+                        onchange="document.getElementById('hidden_${config.idConfig}').value = this.checked ? 'true' : 'false'" />
+                    <label class="form-check-label" for="cb_${config.idConfig}">${checked ? 'Activo' : 'Inactivo'}</label>
+                </div>`;
+                break;
+            case 'Imagen':
+                inputHtml = `
+                    ${valor ? `<img src="${escapeHtml(valor)}" alt="Preview" class="img-thumbnail mb-2" style="max-width:200px;max-height:200px" onerror="this.style.display='none'" id="preview_${config.idConfig}" />` : ''}
+                    <input type="text" name="valores[${config.idConfig}]" value="${escapeHtml(valor)}" class="form-control mb-1" placeholder="URL de la imagen" id="img_input_${config.idConfig}" />
+                    <input type="file" class="form-control" accept="image/*" id="img_file_${config.idConfig}"
+                        onchange="subirImagenPreview(${config.idConfig}, this)" />
+                `;
+                break;
+            case 'Color':
+                inputHtml = `<input type="color" name="valores[${config.idConfig}]" value="${valor || '#000000'}" class="form-control form-control-color" style="width:60px;height:38px" />`;
+                break;
+            default:
+                inputHtml = `<input type="text" name="valores[${config.idConfig}]" value="${escapeHtml(valor)}" class="form-control" />`;
+        }
+
+        wrapper.innerHTML += inputHtml;
+        return wrapper;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function subirImagenPreview(idConfig, fileInput) {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const urlInput = document.getElementById('img_input_' + idConfig);
+            if (urlInput) urlInput.value = e.target.result;
+            const preview = document.getElementById('preview_' + idConfig);
+            if (preview) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            } else {
+                const img = document.createElement('img');
+                img.id = 'preview_' + idConfig;
+                img.src = e.target.result;
+                img.className = 'img-thumbnail mb-2';
+                img.style.maxWidth = '200px';
+                img.style.maxHeight = '200px';
+                fileInput.parentElement.insertBefore(img, fileInput);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+    window.subirImagenPreview = subirImagenPreview;
+
+    function renderSeccion(modulo, items) {
+        const modId = escapeHtml(modulo).replace(/\s/g, '_');
+        const card = document.createElement('div');
+        card.className = 'card shadow-sm mb-4';
+        card.innerHTML = `
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-folder-fill"></i> ${escapeHtml(modulo)}</h5>
+            </div>
+            <div class="card-body">
+                <form class="config-form" method="post" action="${SAVE_URL}" data-modulo="${escapeHtml(modulo)}">
+                    <input type="hidden" name="__RequestVerificationToken" value="${getCsrfToken()}" />
+                    <input type="hidden" name="modulo" value="${escapeHtml(modulo)}" />
+                    <div class="row g-3" id="fields-${modId}"></div>
+                    <hr class="my-4" />
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-save-fill"></i> Guardar Sección
+                    </button>
+                </form>
+            </div>
+        `;
+
+        const fieldsContainer = card.querySelector('#fields-' + modId);
+        items.forEach(c => fieldsContainer.appendChild(renderInput(c)));
+        return card;
+    }
+
+    function cargarConfiguraciones(usarPrueba = false) {
+        const container = document.getElementById('configFormContainer');
+        const spinner = document.getElementById('loadingSpinner');
+        container.innerHTML = '';
+
+        const fetchData = usarPrueba
+            ? Promise.resolve(DATOS_PRUEBA)
+            : fetch(API_URL).then(r => r.json());
+
+        fetchData.then(configuraciones => {
+            const grupos = agruparPorModulo(configuraciones);
+
+            // PRUEBA: Log de agrupación en consola
+            console.log('[Configuracion] === Agrupación por módulo ===');
+            for (const [mod, items] of Object.entries(grupos)) {
+                console.log(`[Configuracion] Módulo '${mod}' tiene ${items.length} ítem(s)`);
+            }
+
+            Object.entries(grupos).forEach(([modulo, items]) => {
+                container.appendChild(renderSeccion(modulo, items));
+            });
+
+            // Los formularios se envían por POST tradicional (action + method) con antiforgery
+        })
+        .catch(err => {
+            console.error('[Configuracion] Error cargando datos:', err);
+            agregarAlerta('Error al cargar configuraciones. Ver consola.', 'danger');
+        })
+        .finally(() => {
+            spinner.style.display = 'none';
+        });
+    }
+
+    // Mensajes de TempData (éxito/error tras guardar)
+    @if (TempData["SuccessMessage"] != null) {
+        <text>agregarAlerta('@Html.Raw(TempData["SuccessMessage"]?.ToString()?.Replace("'", "\\'"))', 'success');</text>
+    }
+    @if (TempData["ErrorMessage"] != null) {
+        <text>agregarAlerta('@Html.Raw(TempData["ErrorMessage"]?.ToString()?.Replace("'", "\\'"))', 'danger');</text>
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prueba sin BD: usar ?demo=1 en la URL o cargarConfiguraciones(true)
+        // Con datos de prueba verás en consola: "General" 1 ítem, "Personalizacion" 2 ítems
+        const usarPrueba = new URLSearchParams(window.location.search).get('demo') === '1';
+        cargarConfiguraciones(usarPrueba);
+    });
+})();
+</script>
+}
