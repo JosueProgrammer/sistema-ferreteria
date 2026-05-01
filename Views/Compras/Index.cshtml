@@ -1,4 +1,4 @@
-@model IEnumerable<Sistema_Ferreteria.Models.Compras.Compra>
+@model Sistema_Ferreteria.Models.ViewModels.ComprasIndexViewModel
 @{
     ViewData["Title"] = "Compras";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -131,138 +131,278 @@
 </div>
 
 <div id="listaPedidos">
-    @if (!Model.Any())
+    <div class="card-erp mb-3 compras-filtros-card">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 px-3 py-2 border-bottom border-light">
+            <span class="small fw-semibold text-secondary text-uppercase">Filtros</span>
+            <button type="button"
+                    class="btn btn-sm btn-erp-secondary compras-filtros-toggle @(Model.TieneFiltrosActivos ? "" : "collapsed")"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#comprasFiltrosCollapse"
+                    aria-expanded="@(Model.TieneFiltrosActivos ? "true" : "false")"
+                    aria-controls="comprasFiltrosCollapse"
+                    id="btnToggleComprasFiltros"
+                    title="Mostrar u ocultar filtros">
+                <i class="bi bi-chevron-down compras-filtros-chevron"></i>
+                <span class="ms-1 compras-filtros-toggle-label">@(Model.TieneFiltrosActivos ? "Ocultar" : "Mostrar")</span>
+            </button>
+        </div>
+        <div id="comprasFiltrosCollapse" class="collapse @(Model.TieneFiltrosActivos ? "show" : "")">
+            <div class="card-body py-3 border-top-0">
+            <form method="get" asp-controller="Compras" asp-action="Index" class="row g-2 align-items-end flex-wrap">
+                <input type="hidden" name="tamanoPagina" value="@Model.TamanoPagina" />
+                <div class="col-6 col-lg-auto">
+                    <label for="filtroProveedorCompras" class="form-label small mb-0 text-secondary">Proveedor</label>
+                    <select name="proveedorId" id="filtroProveedorCompras" class="form-select form-select-sm form-control-erp" style="min-width: 180px;">
+                        <option value="">Todos</option>
+                        @foreach (var prov in proveedores)
+                        {
+                            if (Model.IdProveedorFiltro == prov.IdProveedor)
+                            {
+                                <option value="@prov.IdProveedor" selected>@prov.RazonSocial</option>
+                            }
+                            else
+                            {
+                                <option value="@prov.IdProveedor">@prov.RazonSocial</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-lg-auto">
+                    <label for="filtroEstadoCompra" class="form-label small mb-0 text-secondary">Estado recepción</label>
+                    <select name="estado" id="filtroEstadoCompra" class="form-select form-select-sm form-control-erp" style="min-width: 140px;">
+                        <option value="">Todos</option>
+                        @if (Model.EstadoFiltro == "Pendiente")
+                        {
+                            <option value="Pendiente" selected>Pendiente</option>
+                        }
+                        else
+                        {
+                            <option value="Pendiente">Pendiente</option>
+                        }
+                        @if (Model.EstadoFiltro == "Recibida")
+                        {
+                            <option value="Recibida" selected>Recibida</option>
+                        }
+                        else
+                        {
+                            <option value="Recibida">Recibida</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-lg-auto">
+                    <label for="filtroPagoCompra" class="form-label small mb-0 text-secondary">Pago</label>
+                    <select name="pago" id="filtroPagoCompra" class="form-select form-select-sm form-control-erp" style="min-width: 130px;">
+                        <option value="">Todos</option>
+                        @if (Model.PagoFiltro == "pagado")
+                        {
+                            <option value="pagado" selected>Pagado</option>
+                        }
+                        else
+                        {
+                            <option value="pagado">Pagado</option>
+                        }
+                        @if (Model.PagoFiltro == "parcial")
+                        {
+                            <option value="parcial" selected>Pago parcial</option>
+                        }
+                        else
+                        {
+                            <option value="parcial">Pago parcial</option>
+                        }
+                        @if (Model.PagoFiltro == "pendiente")
+                        {
+                            <option value="pendiente" selected>Pendiente pago</option>
+                        }
+                        else
+                        {
+                            <option value="pendiente">Pendiente pago</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-6 col-lg-auto">
+                    <label for="filtroBuscarCompra" class="form-label small mb-0 text-secondary">Pedido / factura</label>
+                    <input type="text" name="buscar" id="filtroBuscarCompra" value="@Model.Buscar" class="form-control form-control-sm form-control-erp" style="min-width: 140px;" placeholder="# o factura" />
+                </div>
+                <div class="col-6 col-lg-auto">
+                    <label for="filtroFechaDesde" class="form-label small mb-0 text-secondary">Desde</label>
+                    <input type="date" name="fechaDesde" id="filtroFechaDesde" class="form-control form-control-sm form-control-erp" value="@(Model.FechaDesde?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-6 col-lg-auto">
+                    <label for="filtroFechaHasta" class="form-label small mb-0 text-secondary">Hasta</label>
+                    <input type="date" name="fechaHasta" id="filtroFechaHasta" class="form-control form-control-sm form-control-erp" value="@(Model.FechaHasta?.ToString("yyyy-MM-dd"))" />
+                </div>
+                <div class="col-12 col-lg-auto d-flex gap-2 flex-wrap pt-1">
+                    <button type="submit" class="btn btn-sm btn-erp-primary"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                    <a asp-action="Index" class="btn btn-sm btn-erp-secondary">Limpiar</a>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TotalRegistros == 0)
     {
         <div class="text-center py-5">
             <i class="bi bi-cart-x display-1 text-muted"></i>
-            <p class="mt-3">No hay pedidos registrados.</p>
+            <p class="mt-3">@(Model.TieneFiltrosActivos ? "No hay pedidos que coincidan con los filtros." : "No hay pedidos registrados.")</p>
         </div>
     }
-    @foreach (var compra in Model)
+    else
     {
-        var totalPagado = compra.PagosCompra?.Sum(p => p.Monto) ?? 0;
-        var saldoRestante = compra.Total - totalPagado;
-        var estaPagado = saldoRestante <= 0;
-        var diasParaVencer = compra.FechaVencimiento.HasValue ? (compra.FechaVencimiento.Value - DateTime.UtcNow).TotalDays : 999;
-        var esVencimientoProximo = !estaPagado && diasParaVencer <= 3 && diasParaVencer >= 0;
-        var estaVencido = !estaPagado && diasParaVencer < 0;
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 small text-secondary">
+            <span>
+                @if (Model.TotalRegistros > 0)
+                {
+                    <text>Mostrando @Model.RegistroInicio–@Model.RegistroFin de @Model.TotalRegistros</text>
+                }
+            </span>
+        </div>
 
-        <div class="card-erp card-compras-pedido mb-3 @(estaVencido ? "border-danger" : esVencimientoProximo ? "border-warning" : "")" data-id="@compra.IdCompra">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-                    <div>
-                        <span class="text-muted small">Proveedor</span>
-                        <p class="mb-0 fw-bold">@compra.Proveedor.RazonSocial</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        @if (estaPagado)
+        <div class="card-erp mb-3">
+            <div class="table-responsive">
+                <table class="table table-sm table-erp mb-0 compras-tabla-resumen">
+                    <thead>
+                        <tr>
+                            <th>Pedido</th>
+                            <th>Proveedor</th>
+                            <th>Fecha</th>
+                            <th>Vence</th>
+                            <th>Factura</th>
+                            <th>Pago</th>
+                            <th>Estado</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var compra in Model.Compras)
                         {
-                            <span class="badge-erp success"><i class="bi bi-cash-stack me-1"></i>Pagado</span>
-                        }
-                        else if (totalPagado > 0)
-                        {
-                            <span class="badge-erp warning"><i class="bi bi-cash me-1"></i>Pago Parcial</span>
-                        }
-                        else
-                        {
-                            <span class="badge-erp danger"><i class="bi bi-hourglass-split me-1"></i>Pendiente de Pago</span>
-                        }
+                            var totalPagado = compra.PagosCompra?.Sum(p => p.Monto) ?? 0;
+                            var saldoRestante = compra.Total - totalPagado;
+                            var estaPagado = saldoRestante <= 0;
+                            var diasParaVencer = compra.FechaVencimiento.HasValue ? (compra.FechaVencimiento.Value - DateTime.UtcNow).TotalDays : 999;
+                            var esVencimientoProximo = !estaPagado && diasParaVencer <= 3 && diasParaVencer >= 0;
+                            var estaVencido = !estaPagado && diasParaVencer < 0;
+                            var rowClass = estaVencido ? "table-danger" : esVencimientoProximo ? "table-warning" : "";
 
-                        @if (compra.Estado == "Recibida")
-                        {
-                            <span class="badge-erp success"><i class="bi bi-check-circle me-1"></i>Recibida</span>
+                            <tr class="@rowClass" data-id="@compra.IdCompra">
+                                <td class="fw-semibold">#@compra.IdCompra</td>
+                                <td>@(compra.Proveedor?.RazonSocial ?? "—")</td>
+                                <td>@compra.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @if (compra.FechaVencimiento.HasValue)
+                                    {
+                                        <span class="@(estaVencido ? "text-danger fw-bold" : esVencimientoProximo ? "text-warning fw-bold" : "")">
+                                            @compra.FechaVencimiento.Value.ToString("dd/MM/yyyy")
+                                            @if (estaVencido) { <small>(Venc.)</small> }
+                                            else if (esVencimientoProximo) { <small>(Próx.)</small> }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>@(string.IsNullOrEmpty(compra.NumeroFactura) ? "—" : compra.NumeroFactura)</td>
+                                <td>
+                                    @if (estaPagado)
+                                    {
+                                        <span class="badge-erp success"><i class="bi bi-cash-stack me-1"></i>Pagado</span>
+                                    }
+                                    else if (totalPagado > 0)
+                                    {
+                                        <span class="badge-erp warning"><i class="bi bi-cash me-1"></i>Parcial</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-erp danger"><i class="bi bi-hourglass-split me-1"></i>Pendiente</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (compra.Estado == "Recibida")
+                                    {
+                                        <span class="badge-erp success"><i class="bi bi-check-circle me-1"></i>Recibida</span>
+                                    }
+                                    else if (compra.Estado == "Pendiente")
+                                    {
+                                        <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pendiente</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">@compra.Estado</span>
+                                    }
+                                </td>
+                                <td class="text-end fw-semibold text-primary">
+                                    C$ @compra.Total.ToString("N2")
+                                    @if (!estaPagado && totalPagado > 0)
+                                    {
+                                        <small class="d-block text-muted fw-normal">Pte. C$ @saldoRestante.ToString("N2")</small>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-action="Detalle" asp-route-id="@compra.IdCompra" class="btn btn-sm btn-outline-secondary py-0 px-1 me-1" title="Ver detalle"><i class="bi bi-eye"></i></a>
+                                    @if (HasPermission("COMPRAS_GESTION"))
+                                    {
+                                        @if (compra.Estado == "Pendiente")
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-compra py-0 px-1" data-id="@compra.IdCompra" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                            @if (!estaPagado)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-erp-primary btn-pagar-recibir py-0 px-2" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">Pagar/Recibir</button>
+                                            }
+                                            <button type="button" class="btn btn-sm btn-success btn-recibir-compra py-0 px-2" data-id="@compra.IdCompra">Recibir</button>
+                                        }
+                                        else if (!estaPagado)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-erp-primary btn-pagar-solo py-0 px-2" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">Registrar pago</button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-success small"><i class="bi bi-check-all"></i></span>
+                                        }
+                                    }
+                                </td>
+                            </tr>
                         }
-                        else if (compra.Estado == "Pendiente")
-                        {
-                            <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pedido Pendiente</span>
-                        }
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-md-3">
-                        <span class="text-muted small d-block">Fecha Pedido:</span>
-                        <span>@compra.Fecha.ToString("dd/MM/yyyy HH:mm")</span>
-                    </div>
-                    <div class="col-md-3">
-                        <span class="text-muted small d-block">Vence:</span>
-                        @if (compra.FechaVencimiento.HasValue)
-                        {
-                            <span class="@(estaVencido ? "text-danger fw-bold" : esVencimientoProximo ? "text-warning fw-bold" : "")">
-                                @compra.FechaVencimiento.Value.ToString("dd/MM/yyyy")
-                                @if (estaVencido) { <small>(VENCIDO)</small> }
-                                else if (esVencimientoProximo) { <small>(Próximo)</small> }
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="text-muted">Sin fecha</span>
-                        }
-                    </div>
-                    <div class="col-md-3">
-                        <span class="text-muted small d-block">Factura:</span>
-                        <span>@(string.IsNullOrEmpty(compra.NumeroFactura) ? "N/A" : compra.NumeroFactura)</span>
-                    </div>
-                    <div class="col-md-3">
-                        <span class="text-muted small d-block">Total Pedido:</span>
-                        <span class="fw-bold text-primary">C$ @compra.Total.ToString("N2")</span>
-                        @if (!estaPagado && totalPagado > 0)
-                        {
-                            <small class="d-block text-muted">Pendiente: C$ @saldoRestante.ToString("N2")</small>
-                        }
-                    </div>
-                </div>
-                
-                <div class="p-3 rounded mb-3 bg-light border-start border-4 border-primary">
-                    <strong class="d-block mb-2 small text-uppercase">Detalle de Artículos:</strong>
-                    @foreach (var detalle in compra.DetalleCompras)
-                    {
-                        <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-10 py-1">
-                            <span>@detalle.Producto?.Nombre (@detalle.Presentacion?.NombrePresentacion) x @detalle.Cantidad.ToString("N0")</span>
-                            <span class="fw-bold">C$ @((detalle.Cantidad * detalle.PrecioUnitario).ToString("N2"))</span>
-                        </div>
-                    }
-                </div>
-
-                <div class="d-flex flex-wrap gap-2 align-items-center">
-                    @if (HasPermission("COMPRAS_GESTION"))
-                    {
-                        @if (compra.Estado == "Pendiente")
-                        {
-                            <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-compra" data-id="@compra.IdCompra">
-                                <i class="bi bi-trash"></i> Eliminar
-                            </button>
-                            
-                            <div class="ms-auto d-flex gap-2">
-                                @if (!estaPagado)
-                                {
-                                    <button type="button" class="btn btn-sm btn-erp-primary btn-pagar-recibir" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
-                                        <i class="bi bi-cash-stack me-1"></i> Pagar y Recibir
-                                    </button>
-                                }
-                                <button type="button" class="btn btn-sm btn-success btn-recibir-compra" data-id="@compra.IdCompra">
-                                    <i class="bi bi-box-seam me-1"></i> Solo Recibir
-                                </button>
-                            </div>
-                        }
-                        else if (!estaPagado)
-                        {
-                            <button type="button" class="btn btn-sm btn-erp-primary ms-auto btn-pagar-solo" data-id="@compra.IdCompra" data-total="@saldoRestante.ToString(System.Globalization.CultureInfo.InvariantCulture)">
-                                <i class="bi bi-cash me-1"></i> Registrar Pago
-                            </button>
-                        }
-                        else
-                        {
-                            <span class="text-muted small ms-auto"><i class="bi bi-check-all me-1"></i> Operación completada y pagada.</span>
-                        }
-                    }
-                    else
-                    {
-                        <span class="text-muted small ms-auto">Solo lectura</span>
-                    }
-                </div>
+                    </tbody>
+                </table>
             </div>
         </div>
+
+        @if (Model.TotalPaginas > 1)
+        {
+            <nav class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4" aria-label="Paginación compras">
+                <div class="small text-secondary">
+                    Página @Model.PaginaActual de @Model.TotalPaginas
+                </div>
+                <ul class="pagination pagination-sm mb-0">
+                    @if (Model.PaginaActual > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="Compras" asp-action="Index" asp-route-pagina="@(Model.PaginaActual - 1)" asp-route-proveedorId="@Model.IdProveedorFiltro" asp-route-tamanoPagina="@Model.TamanoPagina" asp-route-buscar="@Model.Buscar" asp-route-estado="@Model.EstadoFiltro" asp-route-pago="@Model.PagoFiltro" asp-route-fechaDesde="@Model.FechaDesde" asp-route-fechaHasta="@Model.FechaHasta">Anterior</a>
+                        </li>
+                    }
+                    @{
+                        var ventana = 5;
+                        var desde = Math.Max(1, Model.PaginaActual - ventana / 2);
+                        var hasta = Math.Min(Model.TotalPaginas, desde + ventana - 1);
+                        desde = Math.Max(1, hasta - ventana + 1);
+                    }
+                    @for (var i = desde; i <= hasta; i++)
+                    {
+                        <li class="page-item @(i == Model.PaginaActual ? "active" : "")">
+                            <a class="page-link" asp-controller="Compras" asp-action="Index" asp-route-pagina="@i" asp-route-proveedorId="@Model.IdProveedorFiltro" asp-route-tamanoPagina="@Model.TamanoPagina" asp-route-buscar="@Model.Buscar" asp-route-estado="@Model.EstadoFiltro" asp-route-pago="@Model.PagoFiltro" asp-route-fechaDesde="@Model.FechaDesde" asp-route-fechaHasta="@Model.FechaHasta">@i</a>
+                        </li>
+                    }
+                    @if (Model.PaginaActual < Model.TotalPaginas)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-controller="Compras" asp-action="Index" asp-route-pagina="@(Model.PaginaActual + 1)" asp-route-proveedorId="@Model.IdProveedorFiltro" asp-route-tamanoPagina="@Model.TamanoPagina" asp-route-buscar="@Model.Buscar" asp-route-estado="@Model.EstadoFiltro" asp-route-pago="@Model.PagoFiltro" asp-route-fechaDesde="@Model.FechaDesde" asp-route-fechaHasta="@Model.FechaHasta">Siguiente</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
     }
 </div>
 
@@ -427,6 +567,14 @@
             return modalPago;
         }
 
+        (function () {
+            const panel = document.getElementById('comprasFiltrosCollapse');
+            const label = document.querySelector('.compras-filtros-toggle-label');
+            if (!panel || !label) return;
+            panel.addEventListener('shown.bs.collapse', () => { label.textContent = 'Ocultar'; });
+            panel.addEventListener('hidden.bs.collapse', () => { label.textContent = 'Mostrar'; });
+        })();
+
         // Funciones para abrir modal de pago
         $(document).on('click', '.btn-pagar-recibir', function() {
             const id = $(this).data('id');
@@ -448,6 +596,34 @@
             $('#pagoModoOperacion').val('solo');
             $('#btnConfirmarPago').text('Registrar Sólo Pago');
             getModalPago()?.show();
+        });
+
+        $(document).on('click', '.btn-recibir-compra', function() {
+            const id = $(this).data('id');
+            showConfirm('Recibir Compra', '¿Desea marcar esta compra como recibida? Esto aumentará el stock de los productos.', () => {
+                $.post('/Compras/Recibir', { id: id }, function(res) {
+                    if (res.success) {
+                        showNotification('Stock Actualizado', res.message, 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showNotification('Error', res.message, 'error');
+                    }
+                });
+            }, 'success');
+        });
+
+        $(document).on('click', '.btn-eliminar-compra', function() {
+            const id = $(this).data('id');
+            showConfirm('¿Eliminar Pedido?', '¿Está seguro de eliminar este pedido?', () => {
+                $.post('/Compras/Eliminar', { id: id }, function(res) {
+                    if (res.success) {
+                        showNotification('Removido', res.message, 'success');
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        showNotification('Error', res.message, 'error');
+                    }
+                });
+            });
         });
 
         $('#formPago').submit(async function(e) {
@@ -796,36 +972,6 @@
                         showNotification('Error', 'Error crítico al intentar guardar el pedido.', 'error');
                         $btn.prop('disabled', false).html('<i class="bi bi-save"></i> Guardar Pedido');
                     }
-                });
-            });
-
-            // Recibir Compra
-            $('.btn-recibir-compra').click(function() {
-                const id = $(this).data('id');
-                showConfirm('Recibir Compra', '¿Desea marcar esta compra como recibida? Esto aumentará el stock de los productos.', () => {
-                    $.post('/Compras/Recibir', { id: id }, function(res) {
-                        if (res.success) {
-                            showNotification('Stock Actualizado', res.message, 'success');
-                            setTimeout(() => location.reload(), 1000);
-                        } else {
-                            showNotification('Error', res.message, 'error');
-                        }
-                    });
-                }, 'success');
-            });
-
-            // Eliminar Compra
-            $('.btn-eliminar-compra').click(function() {
-                const id = $(this).data('id');
-                showConfirm('¿Eliminar Pedido?', '¿Está seguro de eliminar este pedido?', () => {
-                    $.post('/Compras/Eliminar', { id: id }, function(res) {
-                        if (res.success) {
-                            showNotification('Removido', res.message, 'success');
-                            setTimeout(() => location.reload(), 800);
-                        } else {
-                            showNotification('Error', res.message, 'error');
-                        }
-                    });
                 });
             });
         });

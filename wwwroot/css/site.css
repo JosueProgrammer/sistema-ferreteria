@@ -599,10 +599,69 @@ body {
   border-color: #212529;
 }
 
-/* Tarjetas de pedidos en Compras: fondo gris muy suave */
+/* Tarjetas de pedidos en Compras */
 .card-compras-pedido {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.compra-meta-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.25rem;
+}
+
+.compra-meta-tile {
+  border-color: #e9ecef !important;
+}
+
+.compra-detalle-panel {
+  border-color: #e9ecef;
+  background: #fff;
+}
+
+.compra-detalle-titulo {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-dark);
+}
+
+.compra-badges-row {
+  flex-shrink: 0;
+}
+
+.compra-card-footer-done {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(25, 135, 84, 0.1);
+  border: 1px solid rgba(25, 135, 84, 0.28);
+  color: #146c43;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.compras-tabla-resumen td,
+.compras-tabla-resumen th {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+  vertical-align: middle;
+}
+
+.compras-filtros-toggle.collapsed .compras-filtros-chevron {
+  transform: rotate(-90deg);
+}
+
+.compras-filtros-chevron {
+  display: inline-block;
+  transition: transform 0.2s ease;
 }
 
 /* Tables */

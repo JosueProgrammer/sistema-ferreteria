@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Data;
 using Sistema_Ferreteria.Models.Compras;
 using Sistema_Ferreteria.Models.Inventario;
+using Sistema_Ferreteria.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Sistema_Ferreteria.Filters;
 
@@ -19,30 +20,191 @@ namespace Sistema_Ferreteria.Controllers
         }
 
         [Permiso("COMPRAS_VER")]
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            int pagina = 1,
+            int? proveedorId = null,
+            int tamanoPagina = 15,
+            string? buscar = null,
+            string? estado = null,
+            string? pago = null,
+            DateTime? fechaDesde = null,
+            DateTime? fechaHasta = null)
         {
-            var compras = await _context.Compras
+            tamanoPagina = Math.Clamp(tamanoPagina, 5, 50);
+            if (pagina < 1)
+                pagina = 1;
+
+            var query = _context.Compras
+                .AsNoTracking()
                 .Include(c => c.Proveedor)
-                .Include(c => c.Usuario)
-                .Include(c => c.DetalleCompras)
-                    .ThenInclude(d => d.Producto)
-                .Include(c => c.DetalleCompras)
-                    .ThenInclude(d => d.Presentacion)
                 .Include(c => c.PagosCompra)
-                .Where(c => !c.Eliminado)
-                .OrderByDescending(c => c.Fecha)
+                .Where(c => !c.Eliminado);
+
+            if (proveedorId.HasValue)
+                query = query.Where(c => c.IdProveedor == proveedorId.Value);
+
+            buscar = string.IsNullOrWhiteSpace(buscar) ? null : buscar.Trim();
+            if (buscar != null)
+            {
+                if (long.TryParse(buscar, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var idPedido))
+                    query = query.Where(c => c.IdCompra == idPedido);
+                else
+                {
+                    var term = buscar.ToLower();
+                    query = query.Where(c => c.NumeroFactura != null && c.NumeroFactura.ToLower().Contains(term));
+                }
+            }
+
+            estado = string.IsNullOrWhiteSpace(estado) ? null : estado.Trim();
+            if (estado != null)
+                query = query.Where(c => c.Estado == estado);
+
+            pago = string.IsNullOrWhiteSpace(pago) ? null : pago.Trim().ToLowerInvariant();
+            if (pago == "pagado")
+                query = query.Where(c => (c.PagosCompra.Sum(p => (decimal?)p.Monto) ?? 0m) >= c.Total);
+            else if (pago == "parcial")
+                query = query.Where(c =>
+                    (c.PagosCompra.Sum(p => (decimal?)p.Monto) ?? 0m) > 0 &&
+                    (c.PagosCompra.Sum(p => (decimal?)p.Monto) ?? 0m) < c.Total);
+            else if (pago == "pendiente")
+                query = query.Where(c =>
+                    (c.PagosCompra.Sum(p => (decimal?)p.Monto) ?? 0m) == 0 && c.Total > 0);
+
+            if (fechaDesde.HasValue)
+                query = query.Where(c => c.Fecha >= fechaDesde.Value.Date);
+
+            if (fechaHasta.HasValue)
+            {
+                var fin = fechaHasta.Value.Date.AddDays(1);
+                query = query.Where(c => c.Fecha < fin);
+            }
+
+            query = query.OrderByDescending(c => c.Fecha);
+
+            var totalRegistros = await query.CountAsync();
+            var totalPaginas = totalRegistros == 0 ? 0 : (int)Math.Ceiling(totalRegistros / (double)tamanoPagina);
+            if (totalPaginas > 0 && pagina > totalPaginas)
+                pagina = totalPaginas;
+
+            var compras = await query
+                .Skip((pagina - 1) * tamanoPagina)
+                .Take(tamanoPagina)
                 .ToListAsync();
 
             ViewBag.Proveedores = await _context.Proveedores.Where(p => p.Estado && !p.Eliminado).ToListAsync();
-            // Para la búsqueda de productos en el formulario
             ViewBag.Productos = await _context.Productos
                 .Include(p => p.Presentaciones)
-                 .ThenInclude(pr => pr.UnidadPresentacion)
+                .ThenInclude(pr => pr.UnidadPresentacion)
                 .Include(p => p.UnidadBase)
                 .Where(p => p.Estado && !p.Eliminado)
                 .ToListAsync();
 
-            return View(compras);
+            var vm = new ComprasIndexViewModel
+            {
+                Compras = compras,
+                PaginaActual = pagina,
+                TamanoPagina = tamanoPagina,
+                TotalRegistros = totalRegistros,
+                IdProveedorFiltro = proveedorId,
+                Buscar = buscar,
+                EstadoFiltro = estado,
+                PagoFiltro = pago,
+                FechaDesde = fechaDesde,
+                FechaHasta = fechaHasta
+            };
+
+            return View(vm);
+        }
+
+        [Permiso("COMPRAS_VER")]
+        public async Task<IActionResult> Detalle(
+            long id,
+            int paginaLineas = 1,
+            int tamanoLineas = 15,
+            string? buscar = null,
+            int? presentacionId = null,
+            bool soloConDescuento = false)
+        {
+            tamanoLineas = Math.Clamp(tamanoLineas, 5, 50);
+            if (paginaLineas < 1)
+                paginaLineas = 1;
+
+            var compra = await _context.Compras
+                .AsNoTracking()
+                .Include(c => c.Proveedor)
+                .Include(c => c.PagosCompra)
+                .FirstOrDefaultAsync(c => c.IdCompra == id && !c.Eliminado);
+
+            if (compra == null)
+                return NotFound();
+
+            var idsPresPedido = await _context.DetalleCompras
+                .AsNoTracking()
+                .Where(d => d.IdCompra == id)
+                .Select(d => d.IdPresentacion)
+                .Distinct()
+                .ToListAsync();
+
+            var presentacionesOpciones = await _context.Presentaciones
+                .AsNoTracking()
+                .Where(p => idsPresPedido.Contains(p.IdPresentacion))
+                .OrderBy(p => p.NombrePresentacion)
+                .Select(p => new CompraDetallePresentacionOpcion(p.IdPresentacion, p.NombrePresentacion))
+                .ToListAsync();
+
+            IQueryable<DetalleCompra> query = _context.DetalleCompras
+                .AsNoTracking()
+                .Where(d => d.IdCompra == id)
+                .Include(d => d.Producto)
+                .Include(d => d.Presentacion);
+
+            buscar = string.IsNullOrWhiteSpace(buscar) ? null : buscar.Trim();
+            if (buscar != null)
+            {
+                var term = buscar.ToLower();
+                // SKU/código: coincidencia exacta (evita que "ABC" traiga "ABC-extra").
+                // Nombre: búsqueda parcial.
+                query = query.Where(d =>
+                    d.Producto != null &&
+                    (d.Producto.Codigo.ToLower() == term ||
+                     (d.Producto.CodigoBarras != null && d.Producto.CodigoBarras.ToLower() == term) ||
+                     d.Producto.Nombre.ToLower().Contains(term)));
+            }
+
+            if (presentacionId.HasValue)
+                query = query.Where(d => d.IdPresentacion == presentacionId.Value);
+
+            if (soloConDescuento)
+                query = query.Where(d => d.DescuentoMonto > 0);
+
+            query = query.OrderBy(d => d.IdDetalleCompra);
+
+            var tieneDescuentoEnFiltrado = await query.AnyAsync(d => d.DescuentoMonto > 0);
+            var totalLineas = await query.CountAsync();
+            var totalPaginasLineas = totalLineas == 0 ? 0 : (int)Math.Ceiling(totalLineas / (double)tamanoLineas);
+            if (totalPaginasLineas > 0 && paginaLineas > totalPaginasLineas)
+                paginaLineas = totalPaginasLineas;
+
+            var lineas = await query
+                .Skip((paginaLineas - 1) * tamanoLineas)
+                .Take(tamanoLineas)
+                .ToListAsync();
+
+            var vm = new CompraDetalleViewModel
+            {
+                Compra = compra,
+                Lineas = lineas,
+                PaginaLineas = paginaLineas,
+                TamanoLineas = tamanoLineas,
+                TotalLineas = totalLineas,
+                TieneDescuentoEnFiltrado = tieneDescuentoEnFiltrado,
+                Buscar = buscar,
+                IdPresentacionFiltro = presentacionId,
+                SoloConDescuento = soloConDescuento,
+                PresentacionesDelPedido = presentacionesOpciones
+            };
+
+            return View(vm);
         }
 
         [HttpPost]

@@ -1,0 +1,216 @@
+@model Sistema_Ferreteria.Models.ViewModels.CompraDetalleViewModel
+@{
+    ViewData["Title"] = $"Pedido #{Model.Compra.IdCompra}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var c = Model.Compra;
+    var totalPagado = c.PagosCompra?.Sum(p => p.Monto) ?? 0;
+    var saldoRestante = c.Total - totalPagado;
+    var estaPagado = saldoRestante <= 0;
+    var diasParaVencer = c.FechaVencimiento.HasValue ? (c.FechaVencimiento.Value - DateTime.UtcNow).TotalDays : 999;
+    var esVencimientoProximo = !estaPagado && diasParaVencer <= 3 && diasParaVencer >= 0;
+    var estaVencido = !estaPagado && diasParaVencer < 0;
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-sm btn-erp-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Volver a compras
+    </a>
+</div>
+
+<div class="page-header mb-4">
+    <h1>Pedido #@c.IdCompra</h1>
+    <p class="subtitle mb-0">Detalle de líneas del pedido</p>
+</div>
+
+<div class="card-erp mb-4 @(estaVencido ? "border-danger" : esVencimientoProximo ? "border-warning" : "")">
+    <div class="card-body">
+        <div class="row g-3 align-items-start">
+            <div class="col-md-6">
+                <span class="compra-meta-label">Proveedor</span>
+                <p class="mb-2 fw-bold fs-6">@(c.Proveedor?.RazonSocial ?? "—")</p>
+                <div class="small text-secondary">
+                    <div><strong>Fecha pedido:</strong> @c.Fecha.ToString("dd/MM/yyyy HH:mm")</div>
+                    <div>
+                        <strong>Vence:</strong>
+                        @if (c.FechaVencimiento.HasValue)
+                        {
+                            <span class="@(estaVencido ? "text-danger fw-bold" : esVencimientoProximo ? "text-warning fw-bold" : "")">
+                                @c.FechaVencimiento.Value.ToString("dd/MM/yyyy")
+                                @if (estaVencido) { <text>(Vencido)</text> }
+                                else if (esVencimientoProximo) { <text>(Próximo)</text> }
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Sin fecha</span>
+                        }
+                    </div>
+                    <div><strong>Factura:</strong> @(string.IsNullOrEmpty(c.NumeroFactura) ? "—" : c.NumeroFactura)</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <span class="compra-meta-label">Total pedido</span>
+                <p class="mb-1 fw-bold text-primary fs-5">C$ @c.Total.ToString("N2")</p>
+                @if (!estaPagado && totalPagado > 0)
+                {
+                    <small class="text-muted">Pendiente: C$ @saldoRestante.ToString("N2")</small>
+                }
+            </div>
+            <div class="col-md-3 text-md-end">
+                <div class="compra-badges-row d-flex flex-wrap gap-2 justify-content-md-end mb-2">
+                    @if (estaPagado)
+                    {
+                        <span class="badge-erp success"><i class="bi bi-cash-stack me-1"></i>Pagado</span>
+                    }
+                    else if (totalPagado > 0)
+                    {
+                        <span class="badge-erp warning"><i class="bi bi-cash me-1"></i>Pago parcial</span>
+                    }
+                    else
+                    {
+                        <span class="badge-erp danger"><i class="bi bi-hourglass-split me-1"></i>Pendiente pago</span>
+                    }
+                    @if (c.Estado == "Recibida")
+                    {
+                        <span class="badge-erp success"><i class="bi bi-check-circle me-1"></i>Recibida</span>
+                    }
+                    else if (c.Estado == "Pendiente")
+                    {
+                        <span class="badge-erp warning"><i class="bi bi-clock me-1"></i>Pedido pendiente</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" asp-action="Detalle" asp-route-id="@c.IdCompra" class="card-erp mb-3">
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-end flex-wrap">
+            <input type="hidden" name="tamanoLineas" value="@Model.TamanoLineas" />
+            <div class="col-md-4">
+                <label class="form-label small mb-0 text-secondary">Buscar</label>
+                <input type="text" name="buscar" value="@Model.Buscar" class="form-control form-control-sm form-control-erp" placeholder="Nombre (parcial) o SKU/código exacto" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small mb-0 text-secondary">Presentación</label>
+                <select name="presentacionId" class="form-select form-select-sm form-control-erp">
+                    <option value="">Todas</option>
+                    @foreach (var p in Model.PresentacionesDelPedido)
+                    {
+                        if (Model.IdPresentacionFiltro == p.IdPresentacion)
+                        {
+                            <option value="@p.IdPresentacion" selected>@p.Nombre</option>
+                        }
+                        else
+                        {
+                            <option value="@p.IdPresentacion">@p.Nombre</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-3 mt-md-4">
+                    <input class="form-check-input" type="checkbox" name="soloConDescuento" value="true" id="chkSoloDesc" @(Model.SoloConDescuento ? "checked" : null) />
+                    <label class="form-check-label small" for="chkSoloDesc">Solo con descuento</label>
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2 flex-wrap">
+                <button type="submit" class="btn btn-sm btn-erp-primary">Aplicar</button>
+                <a asp-action="Detalle" asp-route-id="@c.IdCompra" class="btn btn-sm btn-erp-secondary">Limpiar</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.TotalLineas > 0)
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 small text-secondary">
+        <span>Mostrando @Model.RegistroInicioLineas–@Model.RegistroFinLineas de @Model.TotalLineas líneas</span>
+    </div>
+}
+
+<div class="card-erp mb-4">
+    <div class="table-responsive">
+        <table class="table table-sm table-erp mb-0 compras-tabla-resumen">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>SKU</th>
+                    <th>Presentación</th>
+                    <th class="text-center">Cantidad</th>
+                    @if (Model.TieneDescuentoEnFiltrado)
+                    {
+                        <th class="text-end">Desc.</th>
+                    }
+                    <th class="text-end">Precio U.</th>
+                    <th class="text-end">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Lineas.Any())
+                {
+                    <tr>
+                        <td colspan="@(Model.TieneDescuentoEnFiltrado ? 7 : 6)" class="text-center text-muted py-4">
+                            No hay líneas que coincidan con los filtros.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var detalle in Model.Lineas)
+                    {
+                        var subtotalLinea = (detalle.Cantidad * detalle.PrecioUnitario) - detalle.DescuentoMonto;
+                        <tr>
+                            <td>@detalle.Producto?.Nombre</td>
+                            <td class="text-nowrap font-monospace small">@(string.IsNullOrWhiteSpace(detalle.Producto?.Codigo) ? "—" : detalle.Producto.Codigo)</td>
+                            <td>@detalle.Presentacion?.NombrePresentacion</td>
+                            <td class="text-center">@detalle.Cantidad.ToString("N2")</td>
+                            @if (Model.TieneDescuentoEnFiltrado)
+                            {
+                                <td class="text-end">@(detalle.DescuentoMonto > 0 ? $"C$ {detalle.DescuentoMonto:N2}" : "—")</td>
+                            }
+                            <td class="text-end">C$ @detalle.PrecioUnitario.ToString("N2")</td>
+                            <td class="text-end fw-semibold">C$ @subtotalLinea.ToString("N2")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (Model.TotalPaginasLineas > 1)
+{
+    <nav class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4" aria-label="Paginación líneas">
+        <div class="small text-secondary">
+            Página @Model.PaginaLineas de @Model.TotalPaginasLineas
+        </div>
+        <ul class="pagination pagination-sm mb-0">
+            @if (Model.PaginaLineas > 1)
+            {
+                <li class="page-item">
+                    <a class="page-link" asp-action="Detalle" asp-route-id="@c.IdCompra" asp-route-paginaLineas="@(Model.PaginaLineas - 1)" asp-route-tamanoLineas="@Model.TamanoLineas" asp-route-buscar="@Model.Buscar" asp-route-presentacionId="@Model.IdPresentacionFiltro" asp-route-soloConDescuento="@Model.SoloConDescuento">Anterior</a>
+                </li>
+            }
+            @{
+                var ventana = 5;
+                var desde = Math.Max(1, Model.PaginaLineas - ventana / 2);
+                var hasta = Math.Min(Model.TotalPaginasLineas, desde + ventana - 1);
+                desde = Math.Max(1, hasta - ventana + 1);
+            }
+            @for (var i = desde; i <= hasta; i++)
+            {
+                <li class="page-item @(i == Model.PaginaLineas ? "active" : "")">
+                    <a class="page-link" asp-action="Detalle" asp-route-id="@c.IdCompra" asp-route-paginaLineas="@i" asp-route-tamanoLineas="@Model.TamanoLineas" asp-route-buscar="@Model.Buscar" asp-route-presentacionId="@Model.IdPresentacionFiltro" asp-route-soloConDescuento="@Model.SoloConDescuento">@i</a>
+                </li>
+            }
+            @if (Model.PaginaLineas < Model.TotalPaginasLineas)
+            {
+                <li class="page-item">
+                    <a class="page-link" asp-action="Detalle" asp-route-id="@c.IdCompra" asp-route-paginaLineas="@(Model.PaginaLineas + 1)" asp-route-tamanoLineas="@Model.TamanoLineas" asp-route-buscar="@Model.Buscar" asp-route-presentacionId="@Model.IdPresentacionFiltro" asp-route-soloConDescuento="@Model.SoloConDescuento">Siguiente</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
