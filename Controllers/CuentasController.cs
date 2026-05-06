@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Data;
 using Sistema_Ferreteria.Models.Seguridad;
+using Sistema_Ferreteria.Filters;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 
 namespace Sistema_Ferreteria.Controllers;
 
+[SkipLicenseCheck]
 public class CuentasController : Controller
 {
     private readonly ApplicationDbContext _context;

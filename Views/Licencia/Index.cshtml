@@ -1,6 +1,23 @@
+@model Sistema_Ferreteria.Services.LicenseInfo
 @{
     ViewData["Title"] = "Gestión de Licencia";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var statusClass = Model.IsLicensed ? "success" : "danger";
+    var statusIcon = Model.IsLicensed ? "bi-check-circle-fill" : "bi-x-circle-fill";
+    var statusText = Model.IsLicensed ? "Activa" : "Sin Licencia";
+
+    // Calculate progress percentage
+    int totalDays = 365; // assume 1 year
+    int elapsed = totalDays - Model.DaysRemaining;
+    if (elapsed < 0) elapsed = 0;
+    int progressPercent = totalDays > 0 ? (int)((double)elapsed / totalDays * 100) : 0;
+    if (progressPercent > 100) progressPercent = 100;
+
+    // Days remaining color
+    var daysClass = Model.DaysRemaining > 30 ? "success" : (Model.DaysRemaining > 7 ? "warning" : "danger");
+
+    var actModel = ViewBag.ActivationModel as Sistema_Ferreteria.Models.ActivationViewModel ?? new Sistema_Ferreteria.Models.ActivationViewModel();
 }
 
 <div class="page-header mb-4">
@@ -8,113 +25,164 @@
     <p class="subtitle">Gestionar la licencia del sistema y la suscripción</p>
 </div>
 
+@if (!string.IsNullOrEmpty(ViewBag.Error))
+{
+    <div class="alert alert-danger d-flex align-items-center mb-4">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"></i>
+        <div>@ViewBag.Error</div>
+    </div>
+}
+
 <div class="row g-4 mb-4">
     <!-- Estado de la Licencia -->
     <div class="col-lg-6">
-        <div class="card-erp h-100 border-success" style="border-width: 2px !important;">
+        <div class="card-erp h-100 border-@statusClass" style="border-width: 2px !important;">
             <div class="card-body position-relative">
-                <i class="bi bi-check-circle-fill text-success position-absolute top-0 end-0 m-3" style="font-size: 1.5rem;"></i>
+                <i class="bi @statusIcon text-@statusClass position-absolute top-0 end-0 m-3" style="font-size: 1.5rem;"></i>
                 <h5 class="card-title mb-2">Estado de la Licencia</h5>
                 <p class="card-subtitle mb-4">Información de suscripción actual</p>
-                <div class="mb-3">
-                    <span class="text-muted d-block small">Tipo de Licencia</span>
-                    <strong class="d-flex align-items-center gap-2">
-                        <i class="bi bi-key"></i>
-                        Profesional
-                    </strong>
-                </div>
+                
                 <div class="mb-3">
                     <span class="text-muted d-block small">Estado</span>
-                    <strong class="text-success d-flex align-items-center gap-2">
-                        <span class="rounded-circle bg-success" style="width: 10px; height: 10px;"></span>
-                        Activa
+                    <strong class="text-@statusClass d-flex align-items-center gap-2">
+                        <span class="rounded-circle bg-@statusClass" style="width: 10px; height: 10px;"></span>
+                        @statusText
                     </strong>
                 </div>
-                <div class="mb-3">
-                    <span class="text-muted d-block small"><i class="bi bi-calendar me-1"></i>Fecha de Vencimiento</span>
-                    <strong class="d-block">2026-03-07</strong>
-                    <span class="small text-success">45 días restantes</span>
-                </div>
-                <div class="mb-4">
-                    <span class="text-muted d-block small">Período de Licencia</span>
-                    <div class="progress mt-1" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 12%;"></div>
-                        <div class="progress-bar bg-secondary" style="width: 88%;"></div>
+
+                @if (Model.IsLicensed && Model.ExpirationDate != null)
+                {
+                    <div class="mb-3">
+                        <span class="text-muted d-block small"><i class="bi bi-calendar me-1"></i>Fecha de Vencimiento</span>
+                        <strong class="d-block">@Model.ExpirationDate</strong>
+                        <span class="small text-@daysClass">@Model.DaysRemaining días restantes</span>
                     </div>
-                    <span class="small text-muted">45 / 365 días</span>
+                    <div class="mb-4">
+                        <span class="text-muted d-block small">Período de Licencia</span>
+                        <div class="progress mt-1" style="height: 8px;">
+                            <div class="progress-bar bg-@daysClass" style="width: @(100 - progressPercent)%;"></div>
+                        </div>
+                        <span class="small text-muted">@Model.DaysRemaining / @totalDays días</span>
+                    </div>
+                }
+
+                <div class="mb-3">
+                    <span class="text-muted d-block small"><i class="bi bi-cpu me-1"></i>ID de Equipo</span>
+                    <strong class="d-block" style="font-family: 'Consolas', monospace; letter-spacing: 2px; color: var(--accent-primary, #38b6ff);">@Model.MachineId</strong>
                 </div>
-                <div>
-                    <strong class="d-block mb-2">Características Incluidas</strong>
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Usuarios Ilimitados</li>
-                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Acceso a Todos los Módulos</li>
-                        <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Soporte Prioritario</li>
-                        <li><i class="bi bi-check-lg text-success me-2"></i>Respaldos Diarios</li>
-                    </ul>
-                </div>
+
+                @if (Model.IsLicensed)
+                {
+                    <div>
+                        <strong class="d-block mb-2">Características Incluidas</strong>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Usuarios Ilimitados</li>
+                            <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Acceso a Todos los Módulos</li>
+                            <li class="mb-2"><i class="bi bi-check-lg text-success me-2"></i>Soporte Prioritario</li>
+                            <li><i class="bi bi-check-lg text-success me-2"></i>Respaldos Diarios</li>
+                        </ul>
+                    </div>
+                }
             </div>
         </div>
     </div>
+
     <!-- Renovación y Activación + Ayuda -->
     <div class="col-lg-6">
         <div class="card-erp mb-4">
             <div class="card-header">Renovación y Activación</div>
             <div class="card-body">
                 <p class="card-subtitle mb-3">Gestionar la activación de licencia</p>
-                <div class="d-flex gap-2 mb-4 p-3 rounded" style="background: #f0f7ff;">
-                    <i class="bi bi-info-circle text-primary mt-1"></i>
-                    <p class="mb-0 small">Asegúrate de tener acceso sin interrupciones a Ferretería ERP renovando tu licencia antes del vencimiento.</p>
-                </div>
-                <div class="d-flex gap-2 flex-column">
-                    <button type="button" class="btn-erp-primary justify-content-center">Activar Nueva Licencia</button>
-                    <button type="button" class="btn-erp-secondary justify-content-center">Renovar Suscripción</button>
-                    <button type="button" class="btn-erp-secondary justify-content-center">Descargar Factura</button>
-                </div>
+                
+                @if (!Model.IsLicensed)
+                {
+                    <div class="d-flex gap-2 mb-4 p-3 rounded" style="background: rgba(220, 53, 69, 0.08); border: 1px solid rgba(220, 53, 69, 0.15);">
+                        <i class="bi bi-exclamation-triangle text-danger mt-1"></i>
+                        <p class="mb-0 small">El sistema no tiene una licencia activa. Active una licencia para utilizar todas las funciones del ERP.</p>
+                    </div>
+
+                    <!-- Activación Autónoma -->
+                    <ul class="nav nav-tabs mb-3" id="activationTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(actModel.ActivationType == "Code" ? "active" : "")" id="code-tab" data-bs-toggle="tab" data-bs-target="#code" type="button" role="tab" onclick="setActivationType('Code')">
+                                <i class="bi bi-key me-2"></i>Código
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link @(actModel.ActivationType == "Login" ? "active" : "")" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab" onclick="setActivationType('Login')">
+                                <i class="bi bi-person me-2"></i>Suscripción
+                            </button>
+                        </li>
+                    </ul>
+
+                    <form asp-action="Index" method="post" id="activationForm">
+                        <input type="hidden" name="ActivationType" id="ActivationTypeField" value="@actModel.ActivationType" />
+
+                        <div class="tab-content mb-3" id="activationTabsContent">
+                            <!-- CODE TAB -->
+                            <div class="tab-pane fade @(actModel.ActivationType == "Code" ? "show active" : "")" id="code" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label small">Código de Activación</label>
+                                    <input type="text" name="Code" value="@actModel.Code" class="form-control" style="font-family: monospace; letter-spacing: 2px;" placeholder="VRTX-XXXX-XXXX-XXXX" />
+                                </div>
+                            </div>
+
+                            <!-- LOGIN TAB -->
+                            <div class="tab-pane fade @(actModel.ActivationType == "Login" ? "show active" : "")" id="login" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label small">Correo Electrónico de Vortex</label>
+                                    <input type="email" name="Email" value="@actModel.Email" class="form-control" placeholder="ejemplo@vortex.com" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Contraseña</label>
+                                    <input type="password" name="Password" class="form-control" placeholder="••••••••" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-erp-primary w-100 justify-content-center">
+                            <i class="bi bi-cloud-arrow-down me-2"></i>Activar Software
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="d-flex gap-2 mb-4 p-3 rounded" style="background: #f0f7ff;">
+                        <i class="bi bi-info-circle text-primary mt-1"></i>
+                        <p class="mb-0 small">Asegúrate de tener acceso sin interrupciones a Ferretería ERP renovando tu licencia antes del vencimiento.</p>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle-fill me-2"></i> Su sistema ya se encuentra activado. Para cambiar la licencia comuníquese con soporte.
+                    </div>
+                }
             </div>
         </div>
         <div class="card-erp">
             <div class="card-header">¿Necesitas Ayuda?</div>
             <div class="card-body">
                 <p class="card-subtitle mb-3">Contacta a nuestro equipo de soporte para asistencia con licencias</p>
-                <button type="button" class="btn-erp-secondary">Contactar Soporte</button>
+                <p class="small text-muted mb-3">
+                    Proporcione su <strong>ID de Equipo</strong> (<code>@Model.MachineId</code>) cuando contacte a soporte para una asistencia más rápida.
+                </p>
+                <button type="button" class="btn-erp-secondary" onclick="copyToClipboard('@Model.MachineId')">
+                    <i class="bi bi-clipboard me-2"></i>Copiar ID de Equipo
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Historial de Licencia -->
-<div class="card-erp">
-    <div class="card-header">Historial de Licencia</div>
-    <div class="card-body">
-        <p class="card-subtitle mb-3">Activaciones y renovaciones anteriores</p>
-        <div class="table-responsive">
-            <table class="table-erp">
-                <thead>
-                    <tr>
-                        <th>Tipo</th>
-                        <th>Fecha de Activación</th>
-                        <th>Fecha de Vencimiento</th>
-                        <th>Duración</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Profesional</td>
-                        <td>2025-03-07</td>
-                        <td>2026-03-07</td>
-                        <td>1 Año</td>
-                        <td><span class="text-success fw-bold">Activa</span></td>
-                    </tr>
-                    <tr>
-                        <td>Profesional</td>
-                        <td>2024-03-07</td>
-                        <td>2025-03-07</td>
-                        <td>1 Año</td>
-                        <td><span class="text-danger fw-bold">Vencida</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+@section Scripts {
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Copiado', 'ID de Equipo copiado al portapapeles.', 'success');
+            });
+        }
+        
+        function setActivationType(type) {
+            document.getElementById('ActivationTypeField').value = type;
+        }
+    </script>
+}

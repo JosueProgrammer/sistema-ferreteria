@@ -2,15 +2,22 @@ using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Data;
 using Microsoft.AspNetCore.Identity;
 using Sistema_Ferreteria.Models.Seguridad;
+using Sistema_Ferreteria.Services;
+using Sistema_Ferreteria.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<Sistema_Ferreteria.Services.ITenantService, Sistema_Ferreteria.Services.TenantService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
+builder.Services.AddSingleton<LicenseValidatorService>();
+builder.Services.AddHttpClient();
 
-builder.Services.AddControllersWithViews()
+builder.Services.AddControllersWithViews(options =>
+    {
+        options.Filters.Add<LicenseCheckFilter>();
+    })
     .AddJsonOptions(options => {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;

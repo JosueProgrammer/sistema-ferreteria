@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sistema_Ferreteria.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Sistema_Ferreteria.Controllers;
 
+[Authorize]
 public class ConfiguracionController : Controller
 {
     private readonly ApplicationDbContext _context;
