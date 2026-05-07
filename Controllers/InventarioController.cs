@@ -177,18 +177,31 @@ namespace Sistema_Ferreteria.Controllers
         [Permiso("PRODUCTOS_GESTION")]
         public async Task<IActionResult> AjustarStock(int idProducto, decimal cantidad, string tipo, string observacion)
         {
-            var producto = await _context.Productos.FindAsync(idProducto);
-            if (producto == null) return Json(new { success = false, message = "Producto no encontrado" });
-
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var defaultUser = await _context.Usuarios.FirstOrDefaultAsync();
                 int userId = defaultUser?.IdUsuario ?? 1;
 
-                if (tipo == "Entrada") producto.StockBase += cantidad;
-                else if (tipo == "Salida" || tipo == "Merma") producto.StockBase -= cantidad;
-                else if (tipo == "Ajuste") producto.StockBase = cantidad; // Ajuste directo
+                int rowsStock = tipo switch
+                {
+                    "Entrada" => await ProductoStockCommands.IncrementStockAsync(_context, idProducto, cantidad),
+                    "Salida" or "Merma" => await ProductoStockCommands.DecrementStockIfAvailableAsync(_context, idProducto, cantidad),
+                    "Ajuste" => await ProductoStockCommands.SetStockBaseAsync(_context, idProducto, cantidad),
+                    _ => -1
+                };
+
+                if (rowsStock < 0)
+                {
+                    await transaction.RollbackAsync();
+                    return Json(new { success = false, message = "Tipo de movimiento no válido." });
+                }
+
+                if (rowsStock == 0)
+                {
+                    await transaction.RollbackAsync();
+                    return Json(new { success = false, message = "No se pudo actualizar el stock (producto no encontrado o cantidad inválida para salida/merma)." });
+                }
 
                 var movimiento = new MovimientoInventario
                 {
