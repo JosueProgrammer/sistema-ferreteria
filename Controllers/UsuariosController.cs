@@ -47,80 +47,109 @@ public class UsuariosController : Controller
 
     [HttpPost]
     [Permiso("USUARIOS_GESTION")]
-    public async Task<IActionResult> GuardarUsuario([FromBody] Usuario usuario, [FromQuery] int[] rolesIds)
+    public async Task<IActionResult> GuardarUsuario([FromBody] GuardarUsuarioRequest request, [FromQuery] int[]? rolesIds)
     {
         try
         {
+            if (!ModelState.IsValid)
+            {
+                var errors = string.Join(" ", ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .Where(e => !string.IsNullOrWhiteSpace(e)));
+                return Json(new { success = false, message = string.IsNullOrWhiteSpace(errors) ? "Datos de usuario inválidos." : errors });
+            }
+
             var tenantId = User.FindFirst("TenantId")?.Value;
             if (string.IsNullOrWhiteSpace(tenantId))
             {
                 return Json(new { success = false, message = "No se pudo determinar la sucursal de la sesión." });
             }
 
-            if (usuario.IdUsuario == 0)
+            var roleIdsSanitizados = (rolesIds ?? Array.Empty<int>())
+                .Where(id => id > 0)
+                .Distinct()
+                .ToArray();
+
+            if (roleIdsSanitizados.Length > 0)
+            {
+                var rolesValidos = await _context.Roles
+                    .IgnoreQueryFilters()
+                    .CountAsync(r => r.TenantId == tenantId && !r.Eliminado && roleIdsSanitizados.Contains(r.IdRol));
+
+                if (rolesValidos != roleIdsSanitizados.Length)
+                {
+                    return Json(new { success = false, message = "Uno o más roles no pertenecen a la sucursal actual." });
+                }
+            }
+
+            if (request.IdUsuario == 0)
             {
                 var existeUsuario = await _context.Usuarios
-                    .AnyAsync(u => u.TenantId == tenantId && u.NombreUsuario == usuario.NombreUsuario && !u.Eliminado);
+                    .AnyAsync(u => u.TenantId == tenantId && u.NombreUsuario == request.NombreUsuario && !u.Eliminado);
                 if (existeUsuario)
                 {
                     return Json(new { success = false, message = "El nombre de usuario ya está en uso en esta sucursal." });
                 }
 
-                usuario.FechaCreacion = DateTime.UtcNow;
-                // Hash password
-                if (!string.IsNullOrEmpty(usuario.ContraseñaHash))
+                if (string.IsNullOrWhiteSpace(request.ContraseñaHash))
                 {
-                    usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, usuario.ContraseñaHash);
+                    return Json(new { success = false, message = "La contraseña es obligatoria para crear usuarios." });
                 }
-                
-                _context.Usuarios.Add(usuario);
+
+                var nuevoUsuario = new Usuario
+                {
+                    TenantId = tenantId,
+                    Nombre = request.Nombre,
+                    NombreUsuario = request.NombreUsuario,
+                    Estado = request.Estado,
+                    FechaCreacion = DateTime.UtcNow
+                };
+                nuevoUsuario.ContraseñaHash = _passwordHasher.HashPassword(nuevoUsuario, request.ContraseñaHash);
+
+                _context.Usuarios.Add(nuevoUsuario);
                 await _context.SaveChangesAsync();
 
                 // Asignar roles
-                if (rolesIds != null)
+                foreach (var rid in roleIdsSanitizados)
                 {
-                    foreach (var rid in rolesIds)
-                    {
-                        _context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = usuario.IdUsuario, IdRol = rid });
-                    }
-                    await _context.SaveChangesAsync();
+                    _context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = nuevoUsuario.IdUsuario, IdRol = rid, TenantId = tenantId });
                 }
+                await _context.SaveChangesAsync();
             }
             else
             {
                 var userDb = await _context.Usuarios
                     .Include(u => u.UsuarioRoles)
-                    .FirstOrDefaultAsync(u => u.IdUsuario == usuario.IdUsuario);
+                    .FirstOrDefaultAsync(u => u.IdUsuario == request.IdUsuario && u.TenantId == tenantId && !u.Eliminado);
                 
                 if (userDb == null) return Json(new { success = false, message = "Usuario no encontrado" });
 
                 var existeUsuario = await _context.Usuarios
                     .AnyAsync(u =>
                         u.TenantId == tenantId &&
-                        u.NombreUsuario == usuario.NombreUsuario &&
-                        u.IdUsuario != usuario.IdUsuario &&
+                        u.NombreUsuario == request.NombreUsuario &&
+                        u.IdUsuario != request.IdUsuario &&
                         !u.Eliminado);
                 if (existeUsuario)
                 {
                     return Json(new { success = false, message = "El nombre de usuario ya está en uso en esta sucursal." });
                 }
 
-                userDb.Nombre = usuario.Nombre;
-                userDb.NombreUsuario = usuario.NombreUsuario;
-                if (!string.IsNullOrEmpty(usuario.ContraseñaHash))
+                userDb.Nombre = request.Nombre;
+                userDb.NombreUsuario = request.NombreUsuario;
+                userDb.TenantId = tenantId;
+                if (!string.IsNullOrWhiteSpace(request.ContraseñaHash))
                 {
-                    userDb.ContraseñaHash = _passwordHasher.HashPassword(userDb, usuario.ContraseñaHash);
+                    userDb.ContraseñaHash = _passwordHasher.HashPassword(userDb, request.ContraseñaHash);
                 }
-                userDb.Estado = usuario.Estado;
+                userDb.Estado = request.Estado;
 
                 // Actualizar roles
                 _context.UsuarioRoles.RemoveRange(userDb.UsuarioRoles);
-                if (rolesIds != null)
+                foreach (var rid in roleIdsSanitizados)
                 {
-                    foreach (var rid in rolesIds)
-                    {
-                        _context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = userDb.IdUsuario, IdRol = rid });
-                    }
+                    _context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = userDb.IdUsuario, IdRol = rid, TenantId = tenantId });
                 }
 
                 await _context.SaveChangesAsync();

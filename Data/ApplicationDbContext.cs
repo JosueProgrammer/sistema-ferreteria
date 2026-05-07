@@ -123,15 +123,13 @@ public class ApplicationDbContext : DbContext
 
     private void OnBeforeSaving()
     {
+        var currentTenantId = _tenantService.GetTenantId();
         var entries = ChangeTracker.Entries<ITenantEntity>();
         foreach (var entry in entries)
         {
-            if (entry.State == EntityState.Added)
+            if (entry.State == EntityState.Added && !string.IsNullOrWhiteSpace(currentTenantId))
             {
-                if (string.IsNullOrEmpty(entry.Entity.TenantId))
-                {
-                    entry.Entity.TenantId = TenantId; // Assign resolved tenant
-                }
+                entry.Entity.TenantId = currentTenantId;
             }
         }
     }
