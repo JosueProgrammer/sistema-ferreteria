@@ -197,14 +197,15 @@ namespace Sistema_Ferreteria.Controllers
                     };
                     _context.DetalleVentas.Add(detalleVenta);
 
-                    // Actualizar Inventario
-                    var producto = await _context.Productos.FindAsync(det.IdProducto);
-                    if (producto == null) throw new Exception($"Producto {det.IdProducto} no encontrado.");
-                    
-                    if (producto.StockBase < det.CantidadBase)
-                        throw new Exception($"Stock insuficiente para {producto.Nombre}. Disponible: {producto.StockBase}");
-
-                    producto.StockBase -= det.CantidadBase;
+                    var rowsStock = await ProductoStockCommands.DecrementStockIfAvailableAsync(_context, det.IdProducto, det.CantidadBase);
+                    if (rowsStock == 0)
+                    {
+                        var productoInfo = await _context.Productos.AsNoTracking()
+                            .FirstOrDefaultAsync(p => p.IdProducto == det.IdProducto);
+                        if (productoInfo == null)
+                            throw new Exception($"Producto {det.IdProducto} no encontrado.");
+                        throw new Exception($"Stock insuficiente para {productoInfo.Nombre}. Disponible: {productoInfo.StockBase}");
+                    }
 
                     // Registrar Movimiento
                     var movimiento = new MovimientoInventario
@@ -326,25 +327,22 @@ namespace Sistema_Ferreteria.Controllers
                 // Devolver Stock
                 foreach (var det in venta.DetalleVentas)
                 {
-                    var producto = await _context.Productos.FindAsync(det.IdProducto);
-                    if (producto != null)
+                    var rowsStock = await ProductoStockCommands.IncrementStockAsync(_context, det.IdProducto, det.CantidadBase);
+                    if (rowsStock == 0)
+                        throw new Exception($"No se pudo devolver stock del producto {det.IdProducto} (no existe en el inventario del tenant).");
+
+                    var movimiento = new MovimientoInventario
                     {
-                        producto.StockBase += det.CantidadBase;
-                        
-                        // Registrar Movimiento de Ajuste por Anulación
-                        var movimiento = new MovimientoInventario
-                        {
-                            IdProducto = det.IdProducto,
-                            TipoMovimiento = "Entrada",
-                            CantidadBase = det.CantidadBase,
-                            Fecha = DateTime.UtcNow,
-                            Observacion = $"Anulación de Venta #{venta.IdVenta} - Factura {venta.NumeroFactura}",
-                            IdUsuario = userId,
-                            IdReferencia = (int)venta.IdVenta,
-                            TipoReferencia = "AnulacionVenta"
-                        };
-                        _context.MovimientosInventario.Add(movimiento);
-                    }
+                        IdProducto = det.IdProducto,
+                        TipoMovimiento = "Entrada",
+                        CantidadBase = det.CantidadBase,
+                        Fecha = DateTime.UtcNow,
+                        Observacion = $"Anulación de Venta #{venta.IdVenta} - Factura {venta.NumeroFactura}",
+                        IdUsuario = userId,
+                        IdReferencia = (int)venta.IdVenta,
+                        TipoReferencia = "AnulacionVenta"
+                    };
+                    _context.MovimientosInventario.Add(movimiento);
                 }
 
                 await _context.SaveChangesAsync();

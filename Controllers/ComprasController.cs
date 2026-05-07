@@ -367,14 +367,11 @@ namespace Sistema_Ferreteria.Controllers
 
                 foreach (var detalle in compra.DetalleCompras)
                 {
-                    // 1. Actualizar el StockBase denormalizado en la tabla Productos
-                    var producto = await _context.Productos.FindAsync(detalle.IdProducto);
-                    if (producto != null)
-                    {
-                        producto.StockBase += detalle.CantidadBase;
-                    }
+                    var rowsStock = await ProductoStockCommands.IncrementStockAsync(_context, detalle.IdProducto, detalle.CantidadBase);
+                    if (rowsStock == 0)
+                        throw new Exception($"No se pudo ingresar stock del producto {detalle.IdProducto} (no existe en el inventario del tenant).");
 
-                    // 2. Registrar el rastro histórico en MovimientosInventario
+                    // Registrar el rastro histórico en MovimientosInventario
                     var movimiento = new MovimientoInventario
                     {
                         IdProducto = detalle.IdProducto,

@@ -79,7 +79,7 @@ public class ApplicationDbContext : DbContext
 
         // Configuraciones de nombres de tablas y columnas...
         modelBuilder.Entity<Usuario>()
-            .HasIndex(u => u.NombreUsuario)
+            .HasIndex(u => new { u.TenantId, u.NombreUsuario })
             .IsUnique();
 
         modelBuilder.Entity<Cliente>()
@@ -123,15 +123,13 @@ public class ApplicationDbContext : DbContext
 
     private void OnBeforeSaving()
     {
+        var currentTenantId = _tenantService.GetTenantId();
         var entries = ChangeTracker.Entries<ITenantEntity>();
         foreach (var entry in entries)
         {
-            if (entry.State == EntityState.Added)
+            if (entry.State == EntityState.Added && !string.IsNullOrWhiteSpace(currentTenantId))
             {
-                if (string.IsNullOrEmpty(entry.Entity.TenantId))
-                {
-                    entry.Entity.TenantId = TenantId; // Assign resolved tenant
-                }
+                entry.Entity.TenantId = currentTenantId;
             }
         }
     }

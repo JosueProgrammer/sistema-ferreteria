@@ -29,6 +29,10 @@ public class CuentasController : Controller
         {
             return RedirectToAction("Index", "Home");
         }
+        ViewBag.Tenants = _context.Tenants
+            .Where(t => t.Activo)
+            .OrderBy(t => t.Nombre)
+            .ToList();
         return View();
     }
 
@@ -36,19 +40,45 @@ public class CuentasController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
-        if (!ModelState.IsValid) return View(model);
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Tenants = await _context.Tenants
+                .Where(t => t.Activo)
+                .OrderBy(t => t.Nombre)
+                .ToListAsync();
+            return View(model);
+        }
+
+        var tenantValido = await _context.Tenants
+            .AnyAsync(t => t.IdTenant == model.TenantId && t.Activo);
+        if (!tenantValido)
+        {
+            ModelState.AddModelError(nameof(model.TenantId), "La sucursal seleccionada no es válida.");
+            ViewBag.Tenants = await _context.Tenants
+                .Where(t => t.Activo)
+                .OrderBy(t => t.Nombre)
+                .ToListAsync();
+            return View(model);
+        }
 
         var usuario = await _context.Usuarios
-            .IgnoreQueryFilters() // Must ignore filters to find user across tenants if needed
             .Include(u => u.UsuarioRoles)
                 .ThenInclude(ur => ur.Rol)
                     .ThenInclude(r => r.RolPermisos)
                         .ThenInclude(rp => rp.Permiso)
-            .FirstOrDefaultAsync(u => u.NombreUsuario == model.Usuario && !u.Eliminado && u.Estado);
+            .FirstOrDefaultAsync(u =>
+                u.NombreUsuario == model.Usuario &&
+                u.TenantId == model.TenantId &&
+                !u.Eliminado &&
+                u.Estado);
 
         if (usuario == null)
         {
             ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
+            ViewBag.Tenants = await _context.Tenants
+                .Where(t => t.Activo)
+                .OrderBy(t => t.Nombre)
+                .ToListAsync();
             return View(model);
         }
 
@@ -68,6 +98,10 @@ public class CuentasController : Controller
             else
             {
                 ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
+                ViewBag.Tenants = await _context.Tenants
+                    .Where(t => t.Activo)
+                    .OrderBy(t => t.Nombre)
+                    .ToListAsync();
                 return View(model);
             }
         }
