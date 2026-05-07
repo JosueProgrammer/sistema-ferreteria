@@ -8,14 +8,27 @@
     var statusText = Model.IsLicensed ? "Activa" : "Sin Licencia";
 
     // Calculate progress percentage
-    int totalDays = 365; // assume 1 year
+    int totalDays = Model.TotalDays > 0 ? Model.TotalDays : 365;
     int elapsed = totalDays - Model.DaysRemaining;
     if (elapsed < 0) elapsed = 0;
     int progressPercent = totalDays > 0 ? (int)((double)elapsed / totalDays * 100) : 0;
     if (progressPercent > 100) progressPercent = 100;
 
-    // Days remaining color
-    var daysClass = Model.DaysRemaining > 30 ? "success" : (Model.DaysRemaining > 7 ? "warning" : "danger");
+    int remainingPercent = 100 - progressPercent;
+
+    // Dynamic color based on remaining percent
+    string barColor = "#198754"; // Green (> 60%)
+    string textColorClass = "success";
+    if (remainingPercent <= 10) {
+        barColor = "#dc3545"; // Red
+        textColorClass = "danger";
+    } else if (remainingPercent <= 30) {
+        barColor = "#fd7e14"; // Orange
+        textColorClass = "warning"; // Using warning for text since bootstrap doesn't have text-orange by default
+    } else if (remainingPercent <= 60) {
+        barColor = "#ffc107"; // Yellow
+        textColorClass = "warning";
+    }
 
     var actModel = ViewBag.ActivationModel as Sistema_Ferreteria.Models.ActivationViewModel ?? new Sistema_Ferreteria.Models.ActivationViewModel();
 }
@@ -55,16 +68,21 @@
                     <div class="mb-3">
                         <span class="text-muted d-block small"><i class="bi bi-calendar me-1"></i>Fecha de Vencimiento</span>
                         <strong class="d-block">@Model.ExpirationDate</strong>
-                        <span class="small text-@daysClass">@Model.DaysRemaining días restantes</span>
+                        <span class="small text-@textColorClass">@Model.DaysRemaining días restantes</span>
                     </div>
                     <div class="mb-4">
                         <span class="text-muted d-block small">Período de Licencia</span>
                         <div class="progress mt-1" style="height: 8px;">
-                            <div class="progress-bar bg-@daysClass" style="width: @(100 - progressPercent)%;"></div>
+                            <div class="progress-bar" style="width: @(remainingPercent)%; background-color: @barColor !important;"></div>
                         </div>
                         <span class="small text-muted">@Model.DaysRemaining / @totalDays días</span>
                     </div>
                 }
+
+                <div class="mb-3">
+                    <span class="text-muted d-block small"><i class="bi bi-shield-check me-1"></i>Método de Activación</span>
+                    <strong class="d-block">@Model.ActivationMethod</strong>
+                </div>
 
                 <div class="mb-3">
                     <span class="text-muted d-block small"><i class="bi bi-cpu me-1"></i>ID de Equipo</span>

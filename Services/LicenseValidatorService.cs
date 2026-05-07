@@ -24,6 +24,12 @@ namespace Sistema_Ferreteria.Services
 
         [JsonPropertyName("ver")]
         public string? Version { get; set; }
+
+        [JsonPropertyName("dur")]
+        public int? DurationDays { get; set; }
+
+        [JsonPropertyName("typ")]
+        public string? ActivationMethod { get; set; }
     }
 
     public class LicenseValidationResult
@@ -42,6 +48,8 @@ namespace Sistema_Ferreteria.Services
         public int DaysRemaining { get; set; }
         public string? MachineId { get; set; }
         public string Message { get; set; } = string.Empty;
+        public int TotalDays { get; set; } = 365;
+        public string ActivationMethod { get; set; } = "Desconocido";
     }
 
     public class LicenseValidatorService
@@ -98,6 +106,8 @@ namespace Sistema_Ferreteria.Services
                 Status = result.IsValid ? "Activa" : "Inválida",
                 ExpirationDate = result.Payload?.ExpirationDate,
                 DaysRemaining = result.DaysRemaining,
+                TotalDays = result.Payload?.DurationDays ?? 365,
+                ActivationMethod = result.Payload?.ActivationMethod ?? "Código",
                 MachineId = machineId,
                 Message = result.Message
             };
@@ -154,7 +164,7 @@ namespace Sistema_Ferreteria.Services
                     payloadBytes,
                     signatureBytes,
                     HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pss
+                    RSASignaturePadding.Pkcs1
                 );
 
                 if (!isSignatureValid)
@@ -180,7 +190,10 @@ namespace Sistema_Ferreteria.Services
                         };
                     }
 
-                    // 3. Hardware ID (Node-locking) verification
+                    // 3. Hardware ID (Node-locking) verification - DESHABILITADO PARA SAAS
+                    // Ya que es un SaaS, permitimos que los usuarios de este tenant (empresa) 
+                    // se conecten desde cualquier lugar sin estar amarrados a un Hardware ID específico.
+                    /*
                     if (!string.IsNullOrEmpty(payload.MachineId) && payload.MachineId != currentMachineId)
                     {
                         return new LicenseValidationResult
@@ -190,6 +203,7 @@ namespace Sistema_Ferreteria.Services
                             Payload = payload
                         };
                     }
+                    */
 
                     return new LicenseValidationResult
                     {
