@@ -1,6 +1,7 @@
 @model Sistema_Ferreteria.Models.Seguridad.LoginViewModel
 @{
     Layout = null;
+    var tenants = ViewBag.Tenants as IEnumerable<Sistema_Ferreteria.Models.Seguridad.Tenant> ?? Enumerable.Empty<Sistema_Ferreteria.Models.Seguridad.Tenant>();
 }
 
 <!DOCTYPE html>
@@ -160,6 +161,25 @@
             transition: all 0.3s;
             width: 100%;
         }
+
+        .form-select-erp {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16'%3E%3Cpath fill='%23ffffff' d='M2.646 5.646a.5.5 0 0 1 .708 0L8 10.293l4.646-4.647a.5.5 0 0 1 .708.708l-5 5a.5.5 0 0 1-.708 0l-5-5a.5.5 0 0 1 0-.708'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 40px;
+        }
+
+        .form-select-erp option {
+            color: #111827;
+            background-color: #ffffff;
+        }
+
+        .form-select-erp option[value=""] {
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
@@ -175,6 +195,18 @@
         @Html.AntiForgeryToken()
         
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="mb-3">
+            <label class="form-label">Sucursal</label>
+            <select asp-for="TenantId" class="form-control-erp form-select-erp">
+                <option value="" disabled>Selecciona una sucursal...</option>
+                @foreach (var tenant in tenants)
+                {
+                    <option value="@tenant.IdTenant">@tenant.Nombre (@tenant.IdTenant)</option>
+                }
+            </select>
+            <span asp-validation-for="TenantId" class="text-danger"></span>
+        </div>
 
         <div class="mb-3">
             <label class="form-label">Usuario</label>

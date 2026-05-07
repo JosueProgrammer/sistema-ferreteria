@@ -79,7 +79,7 @@ public class ApplicationDbContext : DbContext
 
         // Configuraciones de nombres de tablas y columnas...
         modelBuilder.Entity<Usuario>()
-            .HasIndex(u => u.NombreUsuario)
+            .HasIndex(u => new { u.TenantId, u.NombreUsuario })
             .IsUnique();
 
         modelBuilder.Entity<Cliente>()

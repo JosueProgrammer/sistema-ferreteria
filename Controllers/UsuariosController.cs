@@ -51,8 +51,21 @@ public class UsuariosController : Controller
     {
         try
         {
+            var tenantId = User.FindFirst("TenantId")?.Value;
+            if (string.IsNullOrWhiteSpace(tenantId))
+            {
+                return Json(new { success = false, message = "No se pudo determinar la sucursal de la sesión." });
+            }
+
             if (usuario.IdUsuario == 0)
             {
+                var existeUsuario = await _context.Usuarios
+                    .AnyAsync(u => u.TenantId == tenantId && u.NombreUsuario == usuario.NombreUsuario && !u.Eliminado);
+                if (existeUsuario)
+                {
+                    return Json(new { success = false, message = "El nombre de usuario ya está en uso en esta sucursal." });
+                }
+
                 usuario.FechaCreacion = DateTime.UtcNow;
                 // Hash password
                 if (!string.IsNullOrEmpty(usuario.ContraseñaHash))
@@ -80,6 +93,17 @@ public class UsuariosController : Controller
                     .FirstOrDefaultAsync(u => u.IdUsuario == usuario.IdUsuario);
                 
                 if (userDb == null) return Json(new { success = false, message = "Usuario no encontrado" });
+
+                var existeUsuario = await _context.Usuarios
+                    .AnyAsync(u =>
+                        u.TenantId == tenantId &&
+                        u.NombreUsuario == usuario.NombreUsuario &&
+                        u.IdUsuario != usuario.IdUsuario &&
+                        !u.Eliminado);
+                if (existeUsuario)
+                {
+                    return Json(new { success = false, message = "El nombre de usuario ya está en uso en esta sucursal." });
+                }
 
                 userDb.Nombre = usuario.Nombre;
                 userDb.NombreUsuario = usuario.NombreUsuario;
@@ -233,7 +257,11 @@ public class UsuariosController : Controller
             if (usuario == null) return Json(new { success = false, message = "Usuario no encontrado" });
 
             // Verificar si el nombre de usuario ya existe para otro usuario
-            var existe = await _context.Usuarios.AnyAsync(u => u.NombreUsuario == nombreUsuario && u.IdUsuario != userId);
+            var existe = await _context.Usuarios.AnyAsync(u =>
+                u.TenantId == usuario.TenantId &&
+                u.NombreUsuario == nombreUsuario &&
+                u.IdUsuario != userId &&
+                !u.Eliminado);
             if (existe) return Json(new { success = false, message = "El nombre de usuario ya está en uso" });
 
             usuario.Nombre = nombre;
