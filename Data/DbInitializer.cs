@@ -10,6 +10,22 @@ public static class DbInitializer
     public static async Task Seed(ApplicationDbContext context)
     {
         var passwordHasher = new PasswordHasher<Usuario>();
+
+        // 0. Migración de contraseñas en texto plano (KAN-8)
+        var usuariosSinHash = await context.Usuarios
+            .IgnoreQueryFilters()
+            .Where(u => !string.IsNullOrEmpty(u.ContraseñaHash) && !u.ContraseñaHash.StartsWith("AQAAAA"))
+            .ToListAsync();
+            
+        if (usuariosSinHash.Any())
+        {
+            foreach (var u in usuariosSinHash)
+            {
+                u.ContraseñaHash = passwordHasher.HashPassword(u, u.ContraseñaHash);
+            }
+            await context.SaveChangesAsync();
+        }
+
         // 1. Permisos Base
         if (!await context.Permisos.IgnoreQueryFilters().AnyAsync())
         {
@@ -77,7 +93,8 @@ public static class DbInitializer
             if (adminRole != null)
             {
                 context.UsuarioRoles.Add(new UsuarioRol { IdUsuario = adminUser.IdUsuario, IdRol = adminRole.IdRol });
-            await context.SaveChangesAsync();
+                await context.SaveChangesAsync();
+            }
         }
 
         // 4. Configuración inicial (para prueba: General 1 ítem, Personalizacion 2 ítems)

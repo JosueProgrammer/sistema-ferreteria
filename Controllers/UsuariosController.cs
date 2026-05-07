@@ -252,13 +252,7 @@ public class UsuariosController : Controller
             var result = _passwordHasher.VerifyHashedPassword(usuario, usuario.ContraseñaHash, passwordActual);
             if (result == PasswordVerificationResult.Failed)
             {
-                // Fallback para migración: si la contraseña en DB es texto plano y coincide
-                if (usuario.ContraseñaHash != passwordActual)
-                {
-                    return Json(new { success = false, message = "La contraseña actual es incorrecta" });
-                }
-                // Si llegamos aquí, es porque coincidió en texto plano. 
-                // Continuamos para que se guarde con el nuevo hash abajo.
+                return Json(new { success = false, message = "La contraseña actual es incorrecta" });
             }
 
             usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, nuevaPassword);

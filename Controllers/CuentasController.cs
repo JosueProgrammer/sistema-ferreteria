@@ -86,24 +86,12 @@ public class CuentasController : Controller
         
         if (result == PasswordVerificationResult.Failed)
         {
-            // Fallback para migración: si la contraseña guardada coincide exactamente con la plana
-            // (esto significa que aún no ha sido hasheada)
-            if (usuario.ContraseñaHash == model.Password)
-            {
-                // Hashear y actualizar ahora mismo
-                usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, model.Password);
-                _context.Usuarios.Update(usuario);
-                await _context.SaveChangesAsync();
-            }
-            else
-            {
-                ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
-                ViewBag.Tenants = await _context.Tenants
-                    .Where(t => t.Activo)
-                    .OrderBy(t => t.Nombre)
-                    .ToListAsync();
-                return View(model);
-            }
+            ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
+            ViewBag.Tenants = await _context.Tenants
+                .Where(t => t.Activo)
+                .OrderBy(t => t.Nombre)
+                .ToListAsync();
+            return View(model);
         }
         else if (result == PasswordVerificationResult.SuccessRehashNeeded)
         {
