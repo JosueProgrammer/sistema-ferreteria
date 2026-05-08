@@ -6,6 +6,7 @@ using Sistema_Ferreteria.Models.Inventario;
 using Sistema_Ferreteria.Models.Clientes;
 using Microsoft.AspNetCore.Authorization;
 using Sistema_Ferreteria.Filters;
+using System.Data;
 
 namespace Sistema_Ferreteria.Controllers
 {
@@ -253,43 +254,64 @@ namespace Sistema_Ferreteria.Controllers
         [Permiso("VENTAS_CREAR")]
         public async Task<IActionResult> RegistrarPago([FromBody] PagoRequest req)
         {
-            var venta = await _context.Ventas.FindAsync(req.IdVenta);
-            if (venta == null) return Json(new { success = false, message = "Venta no encontrada." });
+            if (req.Monto <= 0)
+                return Json(new { success = false, message = "El monto del pago debe ser mayor a 0." });
 
-            var defaultUser = await _context.Usuarios.FirstOrDefaultAsync();
-            int userId = defaultUser?.IdUsuario ?? 1;
-
-            var pago = new PagoVenta
+            using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+            try
             {
-                IdVenta = req.IdVenta,
-                Monto = req.Monto,
-                MetodoPago = req.Metodo ?? "Efectivo",
-                NumeroComprobante = req.Comprobante,
-                FechaPago = DateTime.UtcNow,
-                IdUsuario = userId
-            };
+                var venta = await _context.Ventas.FirstOrDefaultAsync(v => v.IdVenta == req.IdVenta);
+                if (venta == null)
+                    return Json(new { success = false, message = "Venta no encontrada." });
+                if (venta.Eliminado || venta.Estado == "Anulada")
+                    return Json(new { success = false, message = "La venta no permite registrar pagos." });
 
-            _context.PagosVenta.Add(pago);
-            
-            // Actualizar Saldo Cliente
-            if (venta.IdCliente.HasValue)
-            {
-                var cliente = await _context.Clientes.FindAsync(venta.IdCliente.Value);
-                if (cliente != null)
+                var totalPagadoActual = await _context.PagosVenta
+                    .Where(p => p.IdVenta == req.IdVenta)
+                    .SumAsync(p => p.Monto);
+
+                var saldoPendiente = venta.Total - totalPagadoActual;
+                if (saldoPendiente <= 0)
+                    return Json(new { success = false, message = "La venta ya está completamente pagada." });
+                if (req.Monto > saldoPendiente)
+                    return Json(new { success = false, message = $"El monto excede el saldo pendiente de C$ {saldoPendiente:N2}." });
+
+                var defaultUser = await _context.Usuarios.FirstOrDefaultAsync();
+                int userId = defaultUser?.IdUsuario ?? 1;
+
+                var pago = new PagoVenta
                 {
-                    cliente.SaldoActual -= req.Monto;
+                    IdVenta = req.IdVenta,
+                    Monto = req.Monto,
+                    MetodoPago = req.Metodo ?? "Efectivo",
+                    NumeroComprobante = req.Comprobante,
+                    FechaPago = DateTime.UtcNow,
+                    IdUsuario = userId
+                };
+                _context.PagosVenta.Add(pago);
+
+                if (venta.IdCliente.HasValue)
+                {
+                    var cliente = await _context.Clientes.FindAsync(venta.IdCliente.Value);
+                    if (cliente != null)
+                    {
+                        // Ajusta el saldo de deuda del cliente sin permitir valores negativos.
+                        cliente.SaldoActual = Math.Max(0, cliente.SaldoActual - req.Monto);
+                    }
                 }
-            }
 
-            // Si el total ya está cubierto, marcar como completada
-            var totalPagado = await _context.PagosVenta.Where(p => p.IdVenta == req.IdVenta).SumAsync(p => p.Monto) + req.Monto;
-            if (totalPagado >= venta.Total)
+                var totalPagadoNuevo = totalPagadoActual + req.Monto;
+                venta.Estado = totalPagadoNuevo >= venta.Total ? "Completada" : "Pendiente";
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Json(new { success = true, message = "Pago registrado correctamente." });
+            }
+            catch (Exception ex)
             {
-                venta.Estado = "Completada";
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = "Error al registrar el pago: " + ex.Message });
             }
-
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "Pago registrado correctamente." });
         }
 
         [HttpPost]

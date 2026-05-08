@@ -6,6 +6,7 @@ using Sistema_Ferreteria.Models.Inventario;
 using Sistema_Ferreteria.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Sistema_Ferreteria.Filters;
+using System.Data;
 
 namespace Sistema_Ferreteria.Controllers
 {
@@ -288,26 +289,59 @@ namespace Sistema_Ferreteria.Controllers
         [Permiso("COMPRAS_GESTION")]
         public async Task<IActionResult> RegistrarPago([FromBody] PagoRequest req)
         {
-            var compra = await _context.Compras.FindAsync(req.IdCompra);
-            if (compra == null) return Json(new { success = false, message = "Compra no encontrada." });
+            if (req.Monto <= 0)
+                return Json(new { success = false, message = "El monto del pago debe ser mayor a 0." });
 
-            var defaultUser = await _context.Usuarios.FirstOrDefaultAsync();
-            int userId = defaultUser?.IdUsuario ?? 1;
+            var ownTransaction = _context.Database.CurrentTransaction == null;
+            await using var transaction = ownTransaction
+                ? await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable)
+                : null;
 
-            var pago = new PagoCompra
+            try
             {
-                IdCompra = req.IdCompra,
-                Monto = req.Monto,
-                MetodoPago = req.Metodo ?? "Efectivo",
-                NumeroComprobante = req.Comprobante ?? "",
-                FechaPago = DateTime.UtcNow,
-                IdUsuario = userId
-            };
+                var compra = await _context.Compras.FirstOrDefaultAsync(c => c.IdCompra == req.IdCompra);
+                if (compra == null)
+                    return Json(new { success = false, message = "Compra no encontrada." });
+                if (compra.Eliminado || compra.Estado == "Anulada")
+                    return Json(new { success = false, message = "La compra no permite registrar pagos." });
 
-            _context.PagosCompra.Add(pago);
-            await _context.SaveChangesAsync();
+                var totalPagadoActual = await _context.PagosCompra
+                    .Where(p => p.IdCompra == req.IdCompra)
+                    .SumAsync(p => p.Monto);
 
-            return Json(new { success = true, message = "Pago registrado correctamente." });
+                var saldoPendiente = compra.Total - totalPagadoActual;
+                if (saldoPendiente <= 0)
+                    return Json(new { success = false, message = "La compra ya está completamente pagada." });
+                if (req.Monto > saldoPendiente)
+                    return Json(new { success = false, message = $"El monto excede el saldo pendiente de C$ {saldoPendiente:N2}." });
+
+                var defaultUser = await _context.Usuarios.FirstOrDefaultAsync();
+                int userId = defaultUser?.IdUsuario ?? 1;
+
+                var pago = new PagoCompra
+                {
+                    IdCompra = req.IdCompra,
+                    Monto = req.Monto,
+                    MetodoPago = req.Metodo ?? "Efectivo",
+                    NumeroComprobante = req.Comprobante ?? "",
+                    FechaPago = DateTime.UtcNow,
+                    IdUsuario = userId
+                };
+
+                _context.PagosCompra.Add(pago);
+                await _context.SaveChangesAsync();
+
+                if (ownTransaction && transaction != null)
+                    await transaction.CommitAsync();
+
+                return Json(new { success = true, message = "Pago registrado correctamente." });
+            }
+            catch (Exception ex)
+            {
+                if (ownTransaction && transaction != null)
+                    await transaction.RollbackAsync();
+                return Json(new { success = false, message = "Error al registrar el pago: " + ex.Message });
+            }
         }
 
         [HttpPost]
