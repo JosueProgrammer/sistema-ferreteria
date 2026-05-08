@@ -25,6 +25,13 @@ namespace Sistema_Ferreteria.Models.ViewModels
         public DateTime FechaFin { get; set; }
         public decimal TotalVendido { get; set; }
         public int TotalFacturas { get; set; }
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; }
+        public int TotalRegistros { get; set; }
+        public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling(TotalRegistros / (double)PageSize);
+        public int RegistroInicio => TotalRegistros == 0 ? 0 : (Page - 1) * PageSize + 1;
+        public int RegistroFin => TotalRegistros == 0 ? 0 : Math.Min(Page * PageSize, TotalRegistros);
+        public string? ValidationAlert { get; set; }
         public List<VentaDetalleReporteVM> Detalles { get; set; } = new();
     }
 

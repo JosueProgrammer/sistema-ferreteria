@@ -98,6 +98,9 @@ public class ApplicationDbContext : DbContext
             .HasIndex(p => new { p.IdProducto, p.NombrePresentacion })
             .IsUnique();
 
+        modelBuilder.Entity<Venta>()
+            .HasIndex(v => new { v.TenantId, v.Eliminado, v.Fecha, v.IdVenta });
+
         // Relaciones...
         modelBuilder.Entity<RolPermiso>()
             .HasIndex(rp => new { rp.IdRol, rp.IdPermiso })
