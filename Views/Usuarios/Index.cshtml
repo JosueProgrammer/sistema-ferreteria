@@ -309,7 +309,7 @@
                 estado: $('#userEstado').is(':checked')
             };
 
-            const resp = await fetch(`/Usuarios/GuardarUsuario?${rolesIds.map(x => "rolesIds="+x).join("&")}`, {
+            const resp = await fetchCsrf(`/Usuarios/GuardarUsuario?${rolesIds.map(x => "rolesIds="+x).join("&")}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -351,7 +351,7 @@
                 estado: true
             };
 
-            const resp = await fetch(`/Usuarios/GuardarRol?${pIds.map(x => "permisosIds="+x).join("&")}`, {
+            const resp = await fetchCsrf(`/Usuarios/GuardarRol?${pIds.map(x => "permisosIds="+x).join("&")}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -363,7 +363,7 @@
 
         async function eliminarUsuario(id) {
             showConfirm('¿Eliminar Usuario?', 'Se marcará al usuario como eliminado y ya no podrá acceder al sistema.', async () => {
-                const resp = await fetch(`/Usuarios/EliminarUsuario/${id}`, { method: 'POST' });
+                const resp = await fetchCsrf(`/Usuarios/EliminarUsuario/${id}`, { method: 'POST' });
                 const res = await resp.json();
                 if(res.success) location.reload();
             });

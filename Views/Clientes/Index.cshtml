@@ -230,7 +230,7 @@
             }
 
             const url = id ? '/Clientes/Editar' : '/Clientes/Crear';
-            const res = await fetch(url, {
+            const res = await fetchCsrf(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -247,7 +247,7 @@
 
         function confirmarEliminar(id, nombre) {
             showConfirm('Eliminar Cliente', `¿Está seguro de eliminar a "${nombre}"? Esta acción no se puede deshacer.`, async () => {
-                const res = await fetch(`/Clientes/Eliminar/${id}`, { method: 'POST' });
+                const res = await fetchCsrf(`/Clientes/Eliminar/${id}`, { method: 'POST' });
                 const result = await res.json();
                 if (result.success) {
                     showNotification('Eliminado', result.message, 'success');

@@ -29,9 +29,6 @@
     </div>
 </div>
 
-@* Token antifalsificación para formularios dinámicos *@
-<form id="csrfForm" style="display:none">@Html.AntiForgeryToken()</form>
-
 @section Scripts {
 <script>
 (function() {
@@ -40,10 +37,8 @@
     const API_URL = '/Configuracion/Api/ObtenerConfiguraciones';
     const SAVE_URL = '/Configuracion/GuardarSeccion';
 
-    // Obtener token CSRF
     function getCsrfToken() {
-        const input = document.querySelector('#csrfForm input[name="__RequestVerificationToken"]');
-        return input ? input.value : '';
+        return window.csrfToken || '';
     }
 
     // Simulación de datos para prueba de agrupación (descomenta para probar sin BD)

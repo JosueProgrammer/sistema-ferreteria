@@ -152,7 +152,7 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Guardando...';
 
             try {
-                const response = await fetch('/Usuarios/ActualizarInformacion', {
+                const response = await fetchCsrf('/Usuarios/ActualizarInformacion', {
                     method: 'POST',
                     body: data
                 });
@@ -194,7 +194,7 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Procesando...';
 
             try {
-                const response = await fetch('/Usuarios/CambiarPassword', {
+                const response = await fetchCsrf('/Usuarios/CambiarPassword', {
                     method: 'POST',
                     body: data
                 });

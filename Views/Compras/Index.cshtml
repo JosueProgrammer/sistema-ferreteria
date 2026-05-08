@@ -646,7 +646,7 @@
                 $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span> Procesando...');
                 
                 try {
-                    const response = await fetch(url, {
+                    const response = await fetchCsrf(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -743,7 +743,7 @@
                 btn.innerText = 'Guardando...';
 
                 try {
-                    const response = await fetch('/Compras/CrearProveedor', {
+                    const response = await fetchCsrf('/Compras/CrearProveedor', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(data)
@@ -788,7 +788,7 @@
             }
 
             try {
-                const response = await fetch('/Compras/CrearProveedor', {
+                const response = await fetchCsrf('/Compras/CrearProveedor', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)

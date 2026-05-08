@@ -457,7 +457,7 @@
             $btn.prop('disabled', true).text('Guardando...');
 
             try {
-                const res = await fetch('/Ventas/Crear', {
+                const res = await fetchCsrf('/Ventas/Crear', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -475,7 +475,7 @@
         async function rapidoCrearCliente() {
             const nombre = prompt('Escriba el nombre completo del cliente:');
             if (!nombre) return;
-            const res = await fetch('/Ventas/CrearCliente', {
+            const res = await fetchCsrf('/Ventas/CrearCliente', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ nombre, tipoDocumento: 'DNI', numeroDocumento: '000', estado: true })
@@ -505,7 +505,7 @@
              $('#pagoMonto').val(total);
              $('#btnConfirmarCobro').off('click').on('click', async () => {
                  const data = { idVenta: id, monto: $('#pagoMonto').val(), metodo: $('#pagoMetodo').val(), comprobante: $('#pagoComp').val() };
-                 const res = await fetch('/Ventas/RegistrarPago', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                 const res = await fetchCsrf('/Ventas/RegistrarPago', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
                  const j = await res.json();
                  if (j.success) location.reload();
              });

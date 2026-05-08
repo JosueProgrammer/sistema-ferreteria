@@ -602,7 +602,7 @@
                 btn.innerText = 'Creando...';
 
                 try {
-                    const response = await fetch('/Inventario/CrearCategoria', {
+                    const response = await fetchCsrf('/Inventario/CrearCategoria', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ nombre: nombre, estado: true })
@@ -670,7 +670,7 @@
                 btn.innerText = 'Creando...';
 
                 try {
-                    const response = await fetch('/Inventario/CrearUnidad', {
+                    const response = await fetchCsrf('/Inventario/CrearUnidad', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ nombre: nombre, codigo: codigo, estado: true })
@@ -840,7 +840,7 @@
             const url = data.idProducto === 0 ? '/Inventario/CrearProducto' : '/Inventario/EditarProducto';
 
             try {
-                const response = await fetch(url, {
+                const response = await fetchCsrf(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -878,7 +878,7 @@
         async function eliminarProducto(id) {
             showConfirm('¿Eliminar producto?', 'Esta acción marcará el producto como eliminado y no aparecerá en el listado.', async () => {
                 try {
-                    const response = await fetch(`/Inventario/EliminarProducto?id=${id}`, { method: 'POST' });
+                    const response = await fetchCsrf(`/Inventario/EliminarProducto?id=${id}`, { method: 'POST' });
                     const result = await response.json();
                     if (result.success) {
                         showNotification('Eliminado', 'Producto removido con éxito', 'success');
@@ -919,7 +919,7 @@
             const nombre = document.getElementById('nuevaCategoriaNombre').value;
             if (!nombre) return;
             try {
-                const response = await fetch('/Inventario/CrearCategoria', {
+                const response = await fetchCsrf('/Inventario/CrearCategoria', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre: nombre, estado: true })
@@ -935,7 +935,7 @@
             if (!nombre || !codigo) return;
 
             try {
-                const response = await fetch('/Inventario/CrearUnidad', {
+                const response = await fetchCsrf('/Inventario/CrearUnidad', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre: nombre, codigo: codigo, estado: true })
@@ -1052,7 +1052,7 @@
 
             try {
                 const url = `/Inventario/AjustarStock?idProducto=${id}&cantidad=${cantidad}&tipo=${tipo}&observacion=${encodeURIComponent(observacion)}`;
-                const response = await fetch(url, { method: 'POST' });
+                const response = await fetchCsrf(url, { method: 'POST' });
                 const res = await response.json();
                 
                 if(res.success) {

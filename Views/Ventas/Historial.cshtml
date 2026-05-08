@@ -268,7 +268,7 @@
 
         $('#btnConfirmarCobro').click(async () => {
             const data = { idVenta: currentVentaId, monto: $('#pagoMonto').val(), metodo: $('#pagoMetodo').val(), comprobante: $('#pagoComp').val() };
-            const res = await fetch('/Ventas/RegistrarPago', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const res = await fetchCsrf('/Ventas/RegistrarPago', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const j = await res.json();
             if (j.success) {
                 showNotification('Cobro Realizado', j.message, 'success');

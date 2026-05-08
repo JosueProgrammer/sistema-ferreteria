@@ -17,6 +17,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews(options =>
     {
         options.Filters.Add<LicenseCheckFilter>();
+        options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
     })
     .AddJsonOptions(options => {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -30,13 +31,32 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Configurar Autenticación por Cookies
+// En producción se exige HTTPS (Always); en desarrollo se sigue el esquema del request
+// para permitir trabajar contra http://localhost sin perder la protección en producción.
+var cookieSecurePolicy = builder.Environment.IsDevelopment()
+    ? CookieSecurePolicy.SameAsRequest
+    : CookieSecurePolicy.Always;
+
 builder.Services.AddAuthentication("FerreteriaAuth")
     .AddCookie("FerreteriaAuth", options =>
     {
         options.LoginPath = "/Cuentas/Login";
         options.AccessDeniedPath = "/Cuentas/AccesoDenegado";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
     });
+
+// Configurar protección Antiforgery (CSRF)
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = cookieSecurePolicy;
+});
 
 // Configurar Localización
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
