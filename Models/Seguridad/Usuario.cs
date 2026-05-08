@@ -36,6 +36,12 @@ public class Usuario : ITenantEntity
     [Column("FechaCreacion")]
     public DateTime FechaCreacion { get; set; } = DateTime.UtcNow;
 
+    [Column("AccessFailedCount")]
+    public int AccessFailedCount { get; set; }
+
+    [Column("LockoutEnd")]
+    public DateTime? LockoutEnd { get; set; }
+
     // Navegación
     public virtual ICollection<UsuarioRol> UsuarioRoles { get; set; } = new List<UsuarioRol>();
     public virtual ICollection<Auditoria> Auditorias { get; set; } = new List<Auditoria>();

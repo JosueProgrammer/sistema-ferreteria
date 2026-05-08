@@ -7,6 +7,7 @@ using Sistema_Ferreteria.Filters;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Sistema_Ferreteria.Controllers;
 
@@ -15,11 +16,16 @@ public class CuentasController : Controller
 {
     private readonly ApplicationDbContext _context;
     private readonly IPasswordHasher<Usuario> _passwordHasher;
+    private readonly ILogger<CuentasController> _logger;
 
-    public CuentasController(ApplicationDbContext context, IPasswordHasher<Usuario> passwordHasher)
+    public CuentasController(
+        ApplicationDbContext context,
+        IPasswordHasher<Usuario> passwordHasher,
+        ILogger<CuentasController> logger)
     {
         _context = context;
         _passwordHasher = passwordHasher;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -38,8 +44,10 @@ public class CuentasController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("LoginPolicy")]
     public async Task<IActionResult> Login(LoginViewModel model)
     {
+        var requestIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip";
         if (!ModelState.IsValid)
         {
             ViewBag.Tenants = await _context.Tenants
@@ -53,6 +61,11 @@ public class CuentasController : Controller
             .AnyAsync(t => t.IdTenant == model.TenantId && t.Activo);
         if (!tenantValido)
         {
+            _logger.LogWarning(
+                "login_failed tenant_invalid ip:{Ip} usuario:{Usuario} tenant:{TenantId}",
+                requestIp,
+                model.Usuario,
+                model.TenantId);
             ModelState.AddModelError(nameof(model.TenantId), "La sucursal seleccionada no es válida.");
             ViewBag.Tenants = await _context.Tenants
                 .Where(t => t.Activo)
@@ -74,7 +87,29 @@ public class CuentasController : Controller
 
         if (usuario == null)
         {
+            _logger.LogWarning(
+                "login_failed user_not_found ip:{Ip} usuario:{Usuario} tenant:{TenantId}",
+                requestIp,
+                model.Usuario,
+                model.TenantId);
             ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
+            ViewBag.Tenants = await _context.Tenants
+                .Where(t => t.Activo)
+                .OrderBy(t => t.Nombre)
+                .ToListAsync();
+            return View(model);
+        }
+
+        var now = DateTime.UtcNow;
+        if (usuario.LockoutEnd.HasValue && usuario.LockoutEnd.Value > now)
+        {
+            _logger.LogWarning(
+                "login_locked ip:{Ip} usuario:{Usuario} tenant:{TenantId} lockoutEnd:{LockoutEnd}",
+                requestIp,
+                model.Usuario,
+                model.TenantId,
+                usuario.LockoutEnd.Value);
+            ModelState.AddModelError("", "Tu cuenta está bloqueada temporalmente por múltiples intentos fallidos. Inténtalo más tarde.");
             ViewBag.Tenants = await _context.Tenants
                 .Where(t => t.Activo)
                 .OrderBy(t => t.Nombre)
@@ -97,6 +132,27 @@ public class CuentasController : Controller
             }
             else
             {
+                usuario.AccessFailedCount += 1;
+                if (usuario.AccessFailedCount >= 5)
+                {
+                    usuario.LockoutEnd = now.AddMinutes(15);
+                    _logger.LogWarning(
+                        "login_locked ip:{Ip} usuario:{Usuario} tenant:{TenantId} failedCount:{FailedCount} lockoutEnd:{LockoutEnd}",
+                        requestIp,
+                        model.Usuario,
+                        model.TenantId,
+                        usuario.AccessFailedCount,
+                        usuario.LockoutEnd.Value);
+                }
+
+                _context.Usuarios.Update(usuario);
+                await _context.SaveChangesAsync();
+                _logger.LogWarning(
+                    "login_failed bad_password ip:{Ip} usuario:{Usuario} tenant:{TenantId} failedCount:{FailedCount}",
+                    requestIp,
+                    model.Usuario,
+                    model.TenantId,
+                    usuario.AccessFailedCount);
                 ModelState.AddModelError("", "Usuario o contraseña incorrectos.");
                 ViewBag.Tenants = await _context.Tenants
                     .Where(t => t.Activo)
@@ -109,6 +165,14 @@ public class CuentasController : Controller
         {
             // Actualizar hash si el algoritmo cambió o se fortaleció
             usuario.ContraseñaHash = _passwordHasher.HashPassword(usuario, model.Password);
+            _context.Usuarios.Update(usuario);
+            await _context.SaveChangesAsync();
+        }
+
+        if (usuario.AccessFailedCount > 0 || usuario.LockoutEnd.HasValue)
+        {
+            usuario.AccessFailedCount = 0;
+            usuario.LockoutEnd = null;
             _context.Usuarios.Update(usuario);
             await _context.SaveChangesAsync();
         }
@@ -143,6 +207,11 @@ public class CuentasController : Controller
         };
 
         await HttpContext.SignInAsync("FerreteriaAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
+        _logger.LogInformation(
+            "login_success ip:{Ip} usuario:{Usuario} tenant:{TenantId}",
+            requestIp,
+            model.Usuario,
+            model.TenantId);
 
         var isAdmin = claims.Any(c => c.Type == ClaimTypes.Role && c.Value == "Administrador");
         var tenantCount = await _context.Tenants.CountAsync(t => t.Activo);

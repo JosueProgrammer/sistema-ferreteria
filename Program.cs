@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Sistema_Ferreteria.Models.Seguridad;
 using Sistema_Ferreteria.Services;
 using Sistema_Ferreteria.Filters;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +61,33 @@ builder.Services.AddAntiforgery(options =>
 
 // Configurar Localización
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (context, _) =>
+    {
+        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("Security.LoginRateLimit");
+        logger.LogWarning(
+            "login_rate_limited ip:{Ip} path:{Path}",
+            context.HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+            context.HttpContext.Request.Path.Value ?? string.Empty);
+        return ValueTask.CompletedTask;
+    };
+    options.AddPolicy("LoginPolicy", context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: ip,
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            });
+    });
+});
 
 var app = builder.Build();
 
@@ -144,6 +172,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
