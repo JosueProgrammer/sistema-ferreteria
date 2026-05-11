@@ -175,11 +175,7 @@ namespace Sistema_Ferreteria.Controllers
                 venta.Total = req.Detalles.Sum(d => (d.Cantidad * d.PrecioUnitario) - d.Descuento);
                 venta.DescuentoMonto = req.Detalles.Sum(d => d.Descuento);
                 
-                // Generar Numero Factura (Simulado o desde DB)
-                // En un sistema real usaríamos una secuencia
-                var ultimaVentaId = await _context.Ventas.OrderByDescending(v => v.IdVenta).Select(v => v.IdVenta).FirstOrDefaultAsync();
-                venta.NumeroFactura = $"FAC-{(ultimaVentaId + 1):D6}";
-
+                // Generar Numero Factura (KAN-12: Ahora se genera automáticamente en DB vía Secuencia)
                 _context.Ventas.Add(venta);
                 await _context.SaveChangesAsync(); // Guardar para tener IdVenta
 

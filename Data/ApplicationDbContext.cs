@@ -61,6 +61,11 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Secuencia para generación de facturas (KAN-12)
+        modelBuilder.HasSequence<int>("VentaNumeroFacturaSequence")
+            .StartsAt(1)
+            .IncrementsBy(1);
+
         // Global Query Filters for Multi-Tenancy
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -97,6 +102,14 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Presentacion>()
             .HasIndex(p => new { p.IdProducto, p.NombrePresentacion })
             .IsUnique();
+
+        modelBuilder.Entity<Venta>()
+            .HasIndex(v => new { v.TenantId, v.NumeroFactura })
+            .IsUnique();
+
+        modelBuilder.Entity<Venta>()
+            .Property(v => v.NumeroFactura)
+            .HasDefaultValueSql("'FAC-' || lpad(nextval('\"VentaNumeroFacturaSequence\"')::text, 6, '0')");
 
         modelBuilder.Entity<Venta>()
             .HasIndex(v => new { v.TenantId, v.Eliminado, v.Fecha, v.IdVenta });
