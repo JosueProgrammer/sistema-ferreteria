@@ -4,6 +4,15 @@
 @{
     var isLicensed = LicenseValidator.GetLicenseInfo().IsLicensed;
 }
+
+@functions {
+    bool HasPermission(string code) => User.Identity?.IsAuthenticated == true && User.Claims.Any(c => c.Type == "Permiso" && c.Value == code);
+    string GetLinkClass(string controllerName, bool isLicensed) {
+        if (isLicensed) return "";
+        if (controllerName == "Home" || controllerName == "Licencia") return "";
+        return "opacity-50 pe-none";
+    }
+}
 <head>
     <meta charset="utf-8" />
     <title>@ViewData["Title"] - Ferretería ERP</title>
@@ -20,26 +29,20 @@
 
 <div class="app-container">
     <!-- Sidebar -->
-    <aside class="sidebar" id="appSidebar">
-        <div class="sidebar-header">
-            <div class="d-flex flex-column overflow-hidden">
-                <h4 class="logo">Ferretería ERP</h4>
-                <p class="subtitle">Sistema de Gestión</p>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <aside class="sidebar" id="appSidebar">
+            <div class="sidebar-header">
+                <div class="d-flex flex-column overflow-hidden">
+                    <h4 class="logo">Ferretería ERP</h4>
+                    <p class="subtitle">Sistema de Gestión</p>
+                </div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()" title="Contraer/Expandir">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
-            <button class="sidebar-toggle" onclick="toggleSidebar()" title="Contraer/Expandir">
-                <i class="bi bi-list"></i>
-            </button>
-        </div>
-        <nav class="sidebar-nav">
-            @functions {
-                bool HasPermission(string code) => User.Claims.Any(c => c.Type == "Permiso" && c.Value == code);
-                string GetLinkClass(string controllerName, bool isLicensed) {
-                    if (isLicensed) return "";
-                    if (controllerName == "Home" || controllerName == "Licencia") return "";
-                    return "opacity-50 pe-none";
-                }
-            }
-            <ul class="menu">
+            <nav class="sidebar-nav">
+                <ul class="menu">
                 @if (HasPermission("DASHBOARD_VER"))
                 {
                     <li class="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
@@ -139,7 +142,8 @@
         <div class="sidebar-footer">
             <div class="text-center opacity-50 x-small">v1.0.0 © 2026 Ferretería Pro</div>
         </div>
-    </aside>
+        </aside>
+    }
     <main class="main-content">
         <!-- Top Header -->
         <header class="top-header">
@@ -197,13 +201,15 @@
 <script>
     // Persistencia del Sidebar
     const sidebar = document.getElementById('appSidebar');
-    if (localStorage.getItem('sidebarCollapsed') === 'true') {
+    if (sidebar && localStorage.getItem('sidebarCollapsed') === 'true') {
         sidebar.classList.add('collapsed');
     }
 
     function toggleSidebar() {
-        sidebar.classList.toggle('collapsed');
-        localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        if (sidebar) {
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
     }
 
     function confirmarCerrarSesion() {
