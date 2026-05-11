@@ -61,6 +61,9 @@ public class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Extensiones de PostgreSQL (KAN-22)
+        modelBuilder.HasPostgresExtension("pg_trgm");
+
         // Global Query Filters for Multi-Tenancy
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -100,6 +103,12 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Venta>()
             .HasIndex(v => new { v.TenantId, v.Eliminado, v.Fecha, v.IdVenta });
+
+        // Índices para optimización de consultas (KAN-22)
+        modelBuilder.Entity<Venta>()
+            .HasIndex(v => v.NumeroFactura)
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops");
 
         // Relaciones...
         modelBuilder.Entity<RolPermiso>()
