@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Sistema_Ferreteria.Extensions;
 
 namespace Sistema_Ferreteria.Filters;
 
@@ -37,8 +38,13 @@ public class PermisoFilter : IAuthorizationFilter
 
         if (!tienePermiso)
         {
-            if (context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest" || 
-                context.HttpContext.Request.Headers["Accept"].ToString().Contains("application/json"))
+            // NOTA DE SEGURIDAD (KAN-21): 
+            // La validación de permisos real (claims y roles) se realiza de forma independiente.
+            // Las cabeceras HTTP ('X-Requested-With', 'Accept') pueden ser falsificadas fácilmente 
+            // por el cliente, por lo que NUNCA forman parte del mecanismo de seguridad.
+            // Aquí se utilizan EXCLUSIVAMENTE para mejorar la experiencia de usuario (UX),
+            // determinando el formato de respuesta apropiado (JSON vs Redirect) tras haber DENEGADO el acceso.
+            if (context.HttpContext.Request.IsAjaxRequest())
             {
                 context.Result = new JsonResult(new { success = false, message = "No tienes permisos para realizar esta acción" }) { StatusCode = 403 };
             }
